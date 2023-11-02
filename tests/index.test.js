@@ -1,5 +1,5 @@
 const emu = require("../src/index");
-const validator = require('validator');
+const validator = require("validator");
 
 test("create a transaction", () => {
   let dateTime = new Date();
@@ -30,35 +30,35 @@ test("create a transaction", () => {
 });
 
 test("create execution item", () => {
-    let dateTime = new Date();
-    dateTime = dateTime.toISOString();
-    const executionItem = emu.createExecutionItem(
-      "before_transaction",
-      dateTime,
-      [["sample log"]]
-    );
-    expect(validator.isUUID(executionItem.executionId, 4)).toBe(true);
-    expect(validator.isUUID(executionItem.rootCodeFunctionId, 4)).toBe(true);
-    expect(executionItem.sandbox).toBe(true);
-    expect(executionItem.type).toBe("before_transaction");
-    expect(executionItem.authorizationApproved).toBe(null);
-    expect(executionItem.logs[0].createdAt).toBe(dateTime);
-    expect(executionItem.logs[0].level).toBe("info");
-    expect(executionItem.logs[0].content).toBe("sample log");
-  });
+  let dateTime = new Date();
+  dateTime = dateTime.toISOString();
+  const executionItem = emu.createExecutionItem(
+    "before_transaction",
+    dateTime,
+    [["sample log"]],
+  );
+  expect(validator.isUUID(executionItem.executionId, 4)).toBe(true);
+  expect(validator.isUUID(executionItem.rootCodeFunctionId, 4)).toBe(true);
+  expect(executionItem.sandbox).toBe(true);
+  expect(executionItem.type).toBe("before_transaction");
+  expect(executionItem.authorizationApproved).toBe(null);
+  expect(executionItem.logs[0].createdAt).toBe(dateTime);
+  expect(executionItem.logs[0].level).toBe("info");
+  expect(executionItem.logs[0].content).toBe("sample log");
+});
 
-  test("run vm", async () => {
-    let dateTime = new Date();
-    dateTime = dateTime.toISOString();
-    const transaction = emu.transaction(
-        "ZAR",
-        1000,
-        "0000",
-        "Test Merchant",
-        "Test City",
-        "ZAF",
-      );
-      const code = `const beforeTransaction = async (authorization) => {
+test("run vm", async () => {
+  let dateTime = new Date();
+  dateTime = dateTime.toISOString();
+  const transaction = emu.transaction(
+    "ZAR",
+    1000,
+    "0000",
+    "Test Merchant",
+    "Test City",
+    "ZAF",
+  );
+  const code = `const beforeTransaction = async (authorization) => {
         console.log(authorization);
         return true;
       };
@@ -75,24 +75,24 @@ test("create execution item", () => {
         console.log("afterDecline");
       };
       `;
-    const results = await emu.run(
-      JSON.stringify({"test": "value"}),
-      code,
-      transaction
-    );
-    expect(results[0].authorizationApproved).toBeNull();
-    expect(results[0].completedAt).toBe(dateTime);
-    expect(results[0].createdAt).toBe(dateTime);
-    expect(results[0].emailCount).toBe(0);
-    expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
-    expect(results[0].logs[0].content).toBe(transaction);
-    expect(results[0].logs[0].createdAt).toBe(dateTime);
-    expect(results[0].logs[0].level).toBe("info");
-    expect(results[0].pushNotificationCount).toBe(0);
-    expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
-    expect(results[0].sandbox).toBe(true);
-    expect(results[0].smsCount).toBe(0);
-    expect(results[0].startedAt).toBe(dateTime);
-    expect(results[0].type).toBe("before_transaction");
-    expect(results[0].updatedAt).toBe(dateTime);
-  });
+  const results = await emu.run(
+    JSON.stringify({ test: "value" }),
+    code,
+    transaction,
+  );
+  expect(results[0].authorizationApproved).toBeNull();
+  expect(results[0].completedAt).toBe(dateTime);
+  expect(results[0].createdAt).toBe(dateTime);
+  expect(results[0].emailCount).toBe(0);
+  expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
+  expect(results[0].logs[0].content).toBe(transaction);
+  expect(results[0].logs[0].createdAt).toBe(dateTime);
+  expect(results[0].logs[0].level).toBe("info");
+  expect(results[0].pushNotificationCount).toBe(0);
+  expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
+  expect(results[0].sandbox).toBe(true);
+  expect(results[0].smsCount).toBe(0);
+  expect(results[0].startedAt).toBe(dateTime);
+  expect(results[0].type).toBe("before_transaction");
+  expect(results[0].updatedAt).toBe(dateTime);
+});
