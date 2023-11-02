@@ -4,7 +4,7 @@ const validator = require("validator");
 test("create a transaction", () => {
   let dateTime = new Date();
   dateTime = dateTime.toISOString();
-  const transaction = emu.transaction(
+  const transaction = emu.createTransaction(
     "ZAR",
     1000,
     "0000",
@@ -50,7 +50,7 @@ test("create execution item", () => {
 test("run vm", async () => {
   let dateTime = new Date();
   dateTime = dateTime.toISOString();
-  const transaction = emu.transaction(
+  const transaction = emu.createTransaction(
     "ZAR",
     1000,
     "0000",
@@ -76,9 +76,9 @@ test("run vm", async () => {
       };
       `;
   const results = await emu.run(
-    JSON.stringify({ test: "value" }),
-    code,
     transaction,
+    code,
+    JSON.stringify({ test: "value" }),
   );
   expect(results[0].authorizationApproved).toBeNull();
   expect(results[0].completedAt).toBe(dateTime);

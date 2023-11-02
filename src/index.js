@@ -4,7 +4,7 @@ const nodeFetch = require("node-fetch");
 const momentMini = require("moment-mini");
 const _ = require("lodash");
 
-exports.transaction = function (
+exports.createTransaction = function (
   currencyCode,
   centsAmount,
   merchantCode,
@@ -64,7 +64,7 @@ exports.createExecutionItem = function (transactionType, date, logs) {
   };
 };
 
-exports.run = async function (environmentvariables, code, transaction) {
+exports.run = async function (transaction, code, environmentvariables) {
   const beforeTransactionScript =
     "(async () => { " +
     code +
