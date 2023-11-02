@@ -1,6 +1,8 @@
 # Programmable Card Code Emulator
 Write and test programmable card code in a safe environment.
 
+[![Node.js CI](https://github.com/devinpearson/programmable-card-code-emulator/actions/workflows/node.js.yml/badge.svg)](https://github.com/devinpearson/programmable-card-code-emulator/actions/workflows/node.js.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ## About
 While exploring Programmable Banking Cards, I found it difficult to test my code. I wanted to be able to write code and test it in a safe environment. I also wanted to be able to share my code with others. This project is an attempt to solve these problems.
 
