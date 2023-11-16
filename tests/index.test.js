@@ -96,3 +96,156 @@ test("run vm", async () => {
   expect(results[0].type).toBe("before_transaction");
   expect(results[0].updatedAt).toBe(dateTime);
 });
+
+test("run vm with comment at end", async () => {
+    let dateTime = new Date();
+    dateTime = dateTime.toISOString();
+    const transaction = emu.createTransaction(
+      "ZAR",
+      1000,
+      "0000",
+      "Test Merchant",
+      "Test City",
+      "ZAF",
+    );
+    const code = `const beforeTransaction = async (authorization) => {
+          console.log(authorization);
+          return true;
+        };
+        
+        // This function runs after an approved transaction.
+        const afterTransaction = async (transaction) => {
+          //   console.log(transaction)
+          console.log("afterTransaction");
+        };
+        
+        // This function runs after a declined transaction
+        const afterDecline = async (transaction) => {
+          //   console.log(transaction)
+          console.log("afterDecline");
+        };
+        // testing as this use to crash
+        `;
+    const results = await emu.run(
+      transaction,
+      code,
+      JSON.stringify({ test: "value" }),
+    );
+    expect(results[0].authorizationApproved).toBeNull();
+    expect(results[0].completedAt).toBe(dateTime);
+    expect(results[0].createdAt).toBe(dateTime);
+    expect(results[0].emailCount).toBe(0);
+    expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
+    expect(results[0].logs[0].content).toBe(transaction);
+    expect(results[0].logs[0].createdAt).toBe(dateTime);
+    expect(results[0].logs[0].level).toBe("info");
+    expect(results[0].pushNotificationCount).toBe(0);
+    expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
+    expect(results[0].sandbox).toBe(true);
+    expect(results[0].smsCount).toBe(0);
+    expect(results[0].startedAt).toBe(dateTime);
+    expect(results[0].type).toBe("before_transaction");
+    expect(results[0].updatedAt).toBe(dateTime);
+  });
+
+  test("run vm with no return in begin", async () => {
+    let dateTime = new Date();
+    dateTime = dateTime.toISOString();
+    const transaction = emu.createTransaction(
+      "ZAR",
+      1000,
+      "0000",
+      "Test Merchant",
+      "Test City",
+      "ZAF",
+    );
+    const code = `const beforeTransaction = async (authorization) => {
+          console.log(authorization);
+        };
+        
+        // This function runs after an approved transaction.
+        const afterTransaction = async (transaction) => {
+          //   console.log(transaction)
+          console.log("afterTransaction");
+        };
+        
+        // This function runs after a declined transaction
+        const afterDecline = async (transaction) => {
+          //   console.log(transaction)
+          console.log("afterDecline");
+        };
+        // testing as this use to crash
+        `;
+    const results = await emu.run(
+      transaction,
+      code,
+      JSON.stringify({ test: "value" }),
+    );
+    expect(results[0].authorizationApproved).toBeNull();
+    expect(results[0].completedAt).toBe(dateTime);
+    expect(results[0].createdAt).toBe(dateTime);
+    expect(results[0].emailCount).toBe(0);
+    expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
+    expect(results[0].logs[0].content).toBe(transaction);
+    expect(results[0].logs[0].createdAt).toBe(dateTime);
+    expect(results[0].logs[0].level).toBe("info");
+    expect(results[0].pushNotificationCount).toBe(0);
+    expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
+    expect(results[0].sandbox).toBe(true);
+    expect(results[0].smsCount).toBe(0);
+    expect(results[0].startedAt).toBe(dateTime);
+    expect(results[0].type).toBe("before_transaction");
+    expect(results[0].updatedAt).toBe(dateTime);
+  });
+
+test("run vm with false return on begin", async () => {
+    let dateTime = new Date();
+    dateTime = dateTime.toISOString();
+    const transaction = emu.createTransaction(
+      "ZAR",
+      1000,
+      "0000",
+      "Test Merchant",
+      "Test City",
+      "ZAF",
+    );
+    const code = `const beforeTransaction = async (authorization) => {
+          console.log(authorization);
+
+          return false;
+        };
+        
+        // This function runs after an approved transaction.
+        const afterTransaction = async (transaction) => {
+          //   console.log(transaction)
+          console.log("afterTransaction");
+        };
+        
+        // This function runs after a declined transaction
+        const afterDecline = async (transaction) => {
+          //   console.log(transaction)
+          console.log("afterDecline");
+        };
+        // testing as this use to crash
+        `;
+    const results = await emu.run(
+      transaction,
+      code,
+      JSON.stringify({ test: "value" }),
+    );
+    expect(results[0].authorizationApproved).toBeNull();
+    expect(results[0].completedAt).toBe(dateTime);
+    expect(results[0].createdAt).toBe(dateTime);
+    expect(results[0].emailCount).toBe(0);
+    expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
+    expect(results[0].logs[0].content).toBe(transaction);
+    expect(results[0].logs[0].createdAt).toBe(dateTime);
+    expect(results[0].logs[0].level).toBe("info");
+    expect(results[0].pushNotificationCount).toBe(0);
+    expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
+    expect(results[0].sandbox).toBe(true);
+    expect(results[0].smsCount).toBe(0);
+    expect(results[0].startedAt).toBe(dateTime);
+    expect(results[0].type).toBe("before_transaction");
+    expect(results[0].updatedAt).toBe(dateTime);
+  });
