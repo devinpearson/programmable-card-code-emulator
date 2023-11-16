@@ -66,17 +66,17 @@ exports.createExecutionItem = function (transactionType, date, logs) {
 
 exports.run = async function (transaction, code, environmentvariables) {
   const beforeTransactionScript =
-    "(async () => { " +
+    "(async () => { \n" +
     code +
-    " let before = await beforeTransaction(authInput); return before})()";
+    "\n let before = await beforeTransaction(authInput);\n return before})()";
   const afterTransactionScript =
-    "(async () => { " +
+    "(async () => { \n" +
     code +
-    " let before = await afterTransaction(authInput); return before})()";
+    "\n let before = await afterTransaction(authInput);\n return before})()";
   const afterDeclineScript =
-    "(async () => { " +
+    "(async () => { \n" +
     code +
-    " let before = await afterDecline(authInput); return before})()";
+    "\n let before = await afterDecline(authInput);\n return before})()";
   const sb = {
     process: { env: JSON.parse(environmentvariables) },
     authInput: transaction,
