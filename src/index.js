@@ -68,7 +68,7 @@ exports.run = async function (transaction, code, environmentvariables) {
   const beforeTransactionScript =
     "(async () => { \n" +
     code +
-    "\n let before = await beforeTransaction(authInput);\n return before})()";
+    "\n let before = await beforeTransaction(authInput);\n if (before === false) {return false;} else { return true} })()";
   const afterTransactionScript =
     "(async () => { \n" +
     code +
