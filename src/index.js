@@ -72,15 +72,18 @@ exports.run = async function (transaction, code, environmentvariables) {
   const beforeTransactionScript =
     "(async () => { \n" +
     code +
-    "\n let before = await beforeTransaction(authInput);\n if (before === false) {return false;} else { return true} })()";
+    "\n if (typeof beforeTransaction === 'function') { " +
+    "\n let before = await beforeTransaction(authInput);\n if (before === false) {return false;} else { return true} } return true})()";
   const afterTransactionScript =
     "(async () => { \n" +
     code +
-    "\n let before = await afterTransaction(authInput);\n return before})()";
+    "\n if (typeof afterTransaction === 'function') { " +
+    "\n let after = await afterTransaction(authInput);\n return after} return false})()";
   const afterDeclineScript =
     "(async () => { \n" +
     code +
-    "\n let before = await afterDecline(authInput);\n return before})()";
+    "\n if (typeof afterDecline === 'function') { " +
+    "\n let after = await afterDecline(authInput);\n return after} return false})()";
   const sb = {
     process: { env: JSON.parse(environmentvariables) },
     authInput: transaction,
