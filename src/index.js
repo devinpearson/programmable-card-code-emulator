@@ -44,7 +44,11 @@ exports.createTransaction = function (
 exports.createExecutionItem = function (transactionType, date, logs) {
   let tempLogs = [];
   for (let i = 0; i < logs.length; i++) {
-    let log = { createdAt: date, level: "info", content: JSON.stringify(logs[i][0]) };
+    let log = {
+      createdAt: date,
+      level: "info",
+      content: JSON.stringify(logs[i][0]),
+    };
     tempLogs.push(log);
   }
   return {
