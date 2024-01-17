@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createTransaction = void 0;
+const merchant_category_1 = require("./merchant-category");
 const country_1 = require("./country");
 const createTransaction = (
   currencyCode,
@@ -13,6 +14,9 @@ const createTransaction = (
   let date = new Date();
   let dateString = date.toISOString();
   const country = (0, country_1.countryFromString)(countryCode.toUpperCase());
+  const category = (0, merchant_category_1.merchantCategoryFromCode)(
+    merchantCode,
+  );
   return {
     accountNumber: "10000000000",
     dateTime: dateString,
@@ -24,11 +28,7 @@ const createTransaction = (
       id: "2280000",
     },
     merchant: {
-      category: {
-        code: merchantCode,
-        key: "bakeries",
-        name: "Bakeries",
-      },
+      category: category,
       name: merchantName,
       city: merchantCity,
       country: country,

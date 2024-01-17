@@ -406,7 +406,7 @@ export const merchantCategories: MerchantCategory[] = [
 /** Find a merchant category by code */
 export const merchantCategoryFromCode = (code: string): MerchantCategory => {
     const mc = merchantCategories.find((mc: MerchantCategory) => mc.code === code);
-    return mc || {code: '0000', key: 'unknown_category"', name: 'Unknown Category'};
+    return mc || {code: '0000', key: 'unknown_category', name: 'Unknown Category'};
 };
 
 /** Find a merchant category by key */

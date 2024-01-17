@@ -18,8 +18,8 @@ test("create a transaction", () => {
   expect(transaction.currencyCode).toBe("zar");
   expect(transaction.dateTime).toBeDefined();
   expect(transaction.merchant.category.code).toBe("0000");
-  expect(transaction.merchant.category.key).toBe("bakeries");
-  expect(transaction.merchant.category.name).toBe("Bakeries");
+  expect(transaction.merchant.category.key).toBe("unknown_category");
+  expect(transaction.merchant.category.name).toBe("Unknown Category");
   expect(transaction.merchant.city).toBe("Test City");
   expect(transaction.merchant.country.code).toBe("ZA");
   expect(transaction.merchant.country.alpha3).toBe("ZAF");

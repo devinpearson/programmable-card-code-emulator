@@ -1,4 +1,5 @@
 import { Merchant } from "./merchant";
+import { merchantCategoryFromCode } from "./merchant-category";
 import { countryFromString } from "./country";
 
 export interface Transaction {
@@ -25,6 +26,7 @@ export const createTransaction = (
         let date = new Date();
         let dateString = date.toISOString();
         const country = countryFromString(countryCode.toUpperCase())
+        const category = merchantCategoryFromCode(merchantCode);
         return {
           accountNumber: "10000000000",
           dateTime: dateString,
@@ -36,11 +38,7 @@ export const createTransaction = (
             id: "2280000",
           },
           merchant: {
-            category: {
-              code: merchantCode,
-              key: "bakeries",
-              name: "Bakeries",
-            },
+            category: category,
             name: merchantName,
             city: merchantCity,
             country: country,

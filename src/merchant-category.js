@@ -1025,7 +1025,7 @@ exports.merchantCategories = [
 const merchantCategoryFromCode = (code) => {
   const mc = exports.merchantCategories.find((mc) => mc.code === code);
   return (
-    mc || { code: "0000", key: 'unknown_category"', name: "Unknown Category" }
+    mc || { code: "0000", key: "unknown_category", name: "Unknown Category" }
   );
 };
 exports.merchantCategoryFromCode = merchantCategoryFromCode;
