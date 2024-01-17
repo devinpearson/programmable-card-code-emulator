@@ -21,7 +21,7 @@ test("create a transaction", () => {
   expect(transaction.merchant.category.key).toBe("bakeries");
   expect(transaction.merchant.category.name).toBe("Bakeries");
   expect(transaction.merchant.city).toBe("Test City");
-  expect(transaction.merchant.country.code).toBe("ZAF");
+  expect(transaction.merchant.country.code).toBe("ZA");
   expect(transaction.merchant.country.alpha3).toBe("ZAF");
   expect(transaction.merchant.country.name).toBe("South Africa");
   expect(transaction.merchant.name).toBe("Test Merchant");
