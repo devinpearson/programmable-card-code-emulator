@@ -1,4 +1,4 @@
-import { createTransaction } from "./transaction";
-import { run } from "./exec";
-export { run, createTransaction };
+import { createTransaction, Transaction } from "./transaction";
+import { run, ExecutionItem } from "./exec";
+export { run, createTransaction, ExecutionItem, Transaction };
 //# sourceMappingURL=index.d.ts.map
