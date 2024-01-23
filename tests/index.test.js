@@ -10,7 +10,7 @@ test("create a transaction", () => {
     "0000",
     "Test Merchant",
     "Test City",
-    "ZAF",
+    "ZA",
   );
   expect(transaction.accountNumber).toBe("10000000000");
   expect(transaction.card.id).toBe("2280000");
@@ -45,6 +45,21 @@ test("create execution item", () => {
   expect(executionItem.logs[0].createdAt).toBe(dateTime);
   expect(executionItem.logs[0].level).toBe("info");
   expect(executionItem.logs[0].content).toBe(JSON.stringify("sample log"));
+});
+
+test("invalid currency code", () => {
+    let dateTime = new Date();
+    dateTime = dateTime.toISOString();
+    const transaction = emu.createTransaction(
+        "TES",
+        1000,
+        "0000",
+        "Test Merchant",
+        "Test City",
+        "ZA",
+    );
+
+    expect(transaction.currencyCode).toBe("zzz");
 });
 
 test("run vm", async () => {

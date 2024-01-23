@@ -1,6 +1,7 @@
 import { Merchant } from "./merchant";
 import { merchantCategoryFromCode } from "./merchant-category";
 import { countryFromString } from "./country";
+import { currencyFromString } from "./currency";
 
 export interface Transaction {
         accountNumber: string;
@@ -27,11 +28,12 @@ export const createTransaction = (
         let dateString = date.toISOString();
         const country = countryFromString(countryCode.toUpperCase())
         const category = merchantCategoryFromCode(merchantCode);
+        const cc = currencyFromString(currencyCode.toUpperCase());
         return {
           accountNumber: "10000000000",
           dateTime: dateString,
           centsAmount: centsAmount,
-          currencyCode: currencyCode.toLowerCase(),
+          currencyCode: cc.toLowerCase(),
           type: "card",
           reference: "simulation",
           card: {

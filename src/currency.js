@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.currencyCodeToName =
+exports.currencyFromString =
+  exports.currencyCodeToName =
   exports.currencyNameMap =
   exports.CurrencyCode =
     void 0;
@@ -365,3 +366,8 @@ const currencyCodeToName = (currencyCode) => {
   return currencyName || CurrencyCode.ZZZ;
 };
 exports.currencyCodeToName = currencyCodeToName;
+const currencyFromString = (currencyCode) => {
+  const cc = CurrencyCode[currencyCode];
+  return cc || CurrencyCode.ZZZ;
+};
+exports.currencyFromString = currencyFromString;

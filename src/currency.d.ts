@@ -352,4 +352,5 @@ export declare const currencyNameMap: {
 };
 /** Convert a currency code to a currency name */
 export declare const currencyCodeToName: (currencyCode: CurrencyCode) => string;
+export declare const currencyFromString: (currencyCode: string) => CurrencyCode;
 //# sourceMappingURL=currency.d.ts.map

@@ -605,8 +605,8 @@ const countryFromCode = (countryCode) => {
 };
 exports.countryFromCode = countryFromCode;
 const countryFromString = (countryCode) => {
-  // const cc : CountryCode = countryCode as unknown as CountryCode;
-  const c = exports.countries.find((c) => c.alpha3 === countryCode);
+  const cc = CountryCode[countryCode];
+  const c = exports.countries.find((c) => c.code === cc);
   return c || { code: CountryCode.ZZ, alpha3: "ZZZ", name: "Unknown Country" };
 };
 exports.countryFromString = countryFromString;

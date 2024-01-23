@@ -520,8 +520,8 @@ export const countryFromCode = (countryCode: CountryCode): Country => {
 };
 
 export const countryFromString = (countryCode: string): Country => {
-    // const cc : CountryCode = countryCode as unknown as CountryCode;
-    const c = countries.find(c => c.alpha3 === countryCode);
+    const cc = CountryCode[countryCode as keyof typeof CountryCode];
+    const c = countries.find(c => c.code === cc);
     return c || {code: CountryCode.ZZ, alpha3: 'ZZZ', name: 'Unknown Country'};
 };
 

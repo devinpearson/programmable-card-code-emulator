@@ -359,3 +359,8 @@ export const currencyCodeToName = (currencyCode: CurrencyCode): string => {
     const currencyName = currencyNameMap[currencyCode];
     return currencyName || CurrencyCode.ZZZ;
 };
+
+export const currencyFromString = (currencyCode: string): CurrencyCode => {
+    const cc = CurrencyCode[currencyCode as keyof typeof CurrencyCode];
+    return cc || CurrencyCode.ZZZ;
+};
