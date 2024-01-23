@@ -5,7 +5,29 @@ const nodeFetch = require("node-fetch");
 const momentMini = require("moment-mini");
 const _ = require("lodash");
 
-export const createExecutionItem = (transactionType: string, date: string, logs: any[]) => {
+export interface ExecutionItem {
+    executionId: string;
+    rootCodeFunctionId: string;
+    sandbox: boolean;
+    type: string;
+    authorizationApproved: boolean | null;
+    logs: any[];
+    smsCount: number;
+    emailCount: number;
+    pushNotificationCount: number;
+    createdAt: string;
+    startedAt: string;
+    completedAt: string;
+    updatedAt: string;
+  }
+
+export enum TransactionType {
+    BeforeTransaction = "before_transaction",
+    AfterTransaction = "after_transaction",
+    AfterDecline = "after_decline",
+}
+
+export const createExecutionItem = (transactionType: TransactionType, date: string, logs: any[]): ExecutionItem => {
     let tempLogs = [];
     for (let i = 0; i < logs.length; i++) {
       let log = {
@@ -32,7 +54,7 @@ export const createExecutionItem = (transactionType: string, date: string, logs:
     };
   };
   
-  export const run = async function (transaction: Transaction, code: string, environmentvariables: string) {
+  export const run = async function (transaction: Transaction, code: string, environmentvariables: string) : Promise<Array<ExecutionItem>> {
     const beforeTransactionScript =
       "(async () => { \n" +
       code +
@@ -82,10 +104,10 @@ export const createExecutionItem = (transactionType: string, date: string, logs:
       lodash: _,
     };
     let second = afterTransactionScript;
-    let secondTransaction = "after_transaction";
+    let secondTransaction = TransactionType.AfterTransaction;
     if (!results) {
       second = afterDeclineScript;
-      secondTransaction = "after_decline";
+      secondTransaction = TransactionType.AfterDecline;
     }
     let script2 = new vm.Script(second);
     await script2.runInNewContext(sb2, {
@@ -95,7 +117,7 @@ export const createExecutionItem = (transactionType: string, date: string, logs:
     let executionItems = [];
     executionItems.push(
       createExecutionItem(
-        "before_transaction",
+        TransactionType.BeforeTransaction,
         transaction.dateTime,
         sb.logs,
       ),

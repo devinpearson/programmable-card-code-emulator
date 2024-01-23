@@ -1,11 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.run = exports.createExecutionItem = void 0;
+exports.run = exports.createExecutionItem = exports.TransactionType = void 0;
 const { v4: uuidv4 } = require("uuid");
 const vm = require("vm");
 const nodeFetch = require("node-fetch");
 const momentMini = require("moment-mini");
 const _ = require("lodash");
+var TransactionType;
+(function (TransactionType) {
+  TransactionType["BeforeTransaction"] = "before_transaction";
+  TransactionType["AfterTransaction"] = "after_transaction";
+  TransactionType["AfterDecline"] = "after_decline";
+})(TransactionType || (exports.TransactionType = TransactionType = {}));
 const createExecutionItem = (transactionType, date, logs) => {
   let tempLogs = [];
   for (let i = 0; i < logs.length; i++) {
@@ -82,10 +88,10 @@ const run = async function (transaction, code, environmentvariables) {
     lodash: _,
   };
   let second = afterTransactionScript;
-  let secondTransaction = "after_transaction";
+  let secondTransaction = TransactionType.AfterTransaction;
   if (!results) {
     second = afterDeclineScript;
-    secondTransaction = "after_decline";
+    secondTransaction = TransactionType.AfterDecline;
   }
   let script2 = new vm.Script(second);
   await script2.runInNewContext(sb2, {
@@ -94,7 +100,7 @@ const run = async function (transaction, code, environmentvariables) {
   let executionItems = [];
   executionItems.push(
     (0, exports.createExecutionItem)(
-      "before_transaction",
+      TransactionType.BeforeTransaction,
       transaction.dateTime,
       sb.logs,
     ),

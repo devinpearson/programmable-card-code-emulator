@@ -1,4 +1,5 @@
 const emu = require("../src/index");
+const { createExecutionItem } = require("../src/exec");
 const validator = require("validator");
 
 test("create a transaction", () => {
@@ -32,7 +33,7 @@ test("create a transaction", () => {
 test("create execution item", () => {
   let dateTime = new Date();
   dateTime = dateTime.toISOString();
-  const executionItem = emu.createExecutionItem(
+  const executionItem = createExecutionItem(
     "before_transaction",
     dateTime,
     [["sample log"]],

@@ -1,4 +1,4 @@
-import { createTransaction } from "./transaction";
-import { createExecutionItem, run } from "./exec";
+import { createTransaction, Transaction } from "./transaction";
+import { run, ExecutionItem } from "./exec";
 
-export { run, createExecutionItem, createTransaction }
+export { run, createTransaction, ExecutionItem, Transaction }
