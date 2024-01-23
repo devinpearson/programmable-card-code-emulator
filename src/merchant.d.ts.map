@@ -1,0 +1,1 @@
+{"version":3,"file":"merchant.d.ts","sourceRoot":"","sources":["../ts_src/merchant.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,gBAAgB,EAAE,MAAM,qBAAqB,CAAC;AACvD,OAAO,EAAE,OAAO,EAAE,MAAM,WAAW,CAAC;AAEpC,MAAM,WAAW,QAAQ;IACrB,QAAQ,EAAE,gBAAgB,CAAC;IACzB,IAAI,EAAE,MAAM,CAAC;IACb,IAAI,EAAE,MAAM,CAAC;IACb,OAAO,EAAE,OAAO,CAAC;CACtB"}

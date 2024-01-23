@@ -30,8 +30,8 @@ const transaction = emu.createTransaction(
     "0000", // Merchant code (MCC)
     "Test Merchant", // Merchant Name
     "Test City", // City
-    "ZAF"
-); // Country Code
+    "ZAF" // Country code
+);
 ```
 
 Run an emulation: 

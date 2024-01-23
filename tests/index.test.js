@@ -1,4 +1,5 @@
 const emu = require("../src/index");
+const { createExecutionItem } = require("../src/exec");
 const validator = require("validator");
 
 test("create a transaction", () => {
@@ -10,7 +11,7 @@ test("create a transaction", () => {
     "0000",
     "Test Merchant",
     "Test City",
-    "ZAF",
+    "ZA",
   );
   expect(transaction.accountNumber).toBe("10000000000");
   expect(transaction.card.id).toBe("2280000");
@@ -18,10 +19,10 @@ test("create a transaction", () => {
   expect(transaction.currencyCode).toBe("zar");
   expect(transaction.dateTime).toBeDefined();
   expect(transaction.merchant.category.code).toBe("0000");
-  expect(transaction.merchant.category.key).toBe("bakeries");
-  expect(transaction.merchant.category.name).toBe("Bakeries");
+  expect(transaction.merchant.category.key).toBe("unknown_category");
+  expect(transaction.merchant.category.name).toBe("Unknown Category");
   expect(transaction.merchant.city).toBe("Test City");
-  expect(transaction.merchant.country.code).toBe("ZAF");
+  expect(transaction.merchant.country.code).toBe("ZA");
   expect(transaction.merchant.country.alpha3).toBe("ZAF");
   expect(transaction.merchant.country.name).toBe("South Africa");
   expect(transaction.merchant.name).toBe("Test Merchant");
@@ -32,7 +33,7 @@ test("create a transaction", () => {
 test("create execution item", () => {
   let dateTime = new Date();
   dateTime = dateTime.toISOString();
-  const executionItem = emu.createExecutionItem(
+  const executionItem = createExecutionItem(
     "before_transaction",
     dateTime,
     [["sample log"]],
@@ -45,6 +46,39 @@ test("create execution item", () => {
   expect(executionItem.logs[0].createdAt).toBe(dateTime);
   expect(executionItem.logs[0].level).toBe("info");
   expect(executionItem.logs[0].content).toBe(JSON.stringify("sample log"));
+});
+
+test("invalid currency code", () => {
+    let dateTime = new Date();
+    dateTime = dateTime.toISOString();
+    const transaction = emu.createTransaction(
+        "TES",
+        1000,
+        "0000",
+        "Test Merchant",
+        "Test City",
+        "ZA",
+    );
+
+    expect(transaction.currencyCode).toBe("zzz");
+});
+
+test("valid merchant code", () => {
+    let dateTime = new Date();
+    dateTime = dateTime.toISOString();
+    const transaction = emu.createTransaction(
+        "ZAR",
+        1000,
+        "7277",
+        "Test Merchant",
+        "Test City",
+        "ZA",
+    );
+
+    expect(transaction.currencyCode).toBe("zar");
+    expect(transaction.merchant.category.code).toBe("7277");
+    expect(transaction.merchant.category.key).toBe("counseling_services");
+    expect(transaction.merchant.category.name).toBe("Counseling Services");
 });
 
 test("run vm", async () => {
@@ -274,7 +308,7 @@ test("run vm with no beforeTransaction", async () => {
     code,
     JSON.stringify({ test: "value" }),
   );
-  console.log(results);
+//   console.log(results);
   expect(results[0].authorizationApproved).toBeNull();
   expect(results[0].completedAt).toBe(dateTime);
   expect(results[0].createdAt).toBe(dateTime);
@@ -311,7 +345,7 @@ test("run vm with no afterTransaction", async () => {
     code,
     JSON.stringify({ test: "value" }),
   );
-  console.log(results);
+//   console.log(results);
   expect(results[0].authorizationApproved).toBeNull();
   expect(results[0].completedAt).toBe(dateTime);
   expect(results[0].createdAt).toBe(dateTime);
@@ -351,7 +385,7 @@ test("run vm with no afterDecline", async () => {
     code,
     JSON.stringify({ test: "value" }),
   );
-  console.log(results);
+//   console.log(results);
   expect(results[0].authorizationApproved).toBeNull();
   expect(results[0].completedAt).toBe(dateTime);
   expect(results[0].createdAt).toBe(dateTime);
