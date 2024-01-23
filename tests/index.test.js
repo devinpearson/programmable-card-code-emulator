@@ -62,6 +62,24 @@ test("invalid currency code", () => {
     expect(transaction.currencyCode).toBe("zzz");
 });
 
+test("valid merchant code", () => {
+    let dateTime = new Date();
+    dateTime = dateTime.toISOString();
+    const transaction = emu.createTransaction(
+        "ZAR",
+        1000,
+        "7277",
+        "Test Merchant",
+        "Test City",
+        "ZA",
+    );
+
+    expect(transaction.currencyCode).toBe("zar");
+    expect(transaction.merchant.category.code).toBe("7277");
+    expect(transaction.merchant.category.key).toBe("counseling_services");
+    expect(transaction.merchant.category.name).toBe("Counseling Services");
+});
+
 test("run vm", async () => {
   let dateTime = new Date();
   dateTime = dateTime.toISOString();
@@ -289,7 +307,7 @@ test("run vm with no beforeTransaction", async () => {
     code,
     JSON.stringify({ test: "value" }),
   );
-  console.log(results);
+//   console.log(results);
   expect(results[0].authorizationApproved).toBeNull();
   expect(results[0].completedAt).toBe(dateTime);
   expect(results[0].createdAt).toBe(dateTime);
@@ -326,7 +344,7 @@ test("run vm with no afterTransaction", async () => {
     code,
     JSON.stringify({ test: "value" }),
   );
-  console.log(results);
+//   console.log(results);
   expect(results[0].authorizationApproved).toBeNull();
   expect(results[0].completedAt).toBe(dateTime);
   expect(results[0].createdAt).toBe(dateTime);
@@ -366,7 +384,7 @@ test("run vm with no afterDecline", async () => {
     code,
     JSON.stringify({ test: "value" }),
   );
-  console.log(results);
+//   console.log(results);
   expect(results[0].authorizationApproved).toBeNull();
   expect(results[0].completedAt).toBe(dateTime);
   expect(results[0].createdAt).toBe(dateTime);
