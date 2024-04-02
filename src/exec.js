@@ -1,6 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.run = exports.createExecutionItem = exports.TransactionType = void 0;
+exports.run =
+  exports.createExecutionItem =
+  exports.LogLevel =
+  exports.TransactionType =
+    void 0;
 const { v4: uuidv4 } = require("uuid");
 const vm = require("vm");
 const nodeFetch = require("node-fetch");
@@ -12,7 +16,13 @@ var TransactionType;
   TransactionType["AfterTransaction"] = "after_transaction";
   TransactionType["AfterDecline"] = "after_decline";
 })(TransactionType || (exports.TransactionType = TransactionType = {}));
-const createExecutionItem = (transactionType, date, logs) => {
+var LogLevel;
+(function (LogLevel) {
+  LogLevel["Info"] = "info";
+  LogLevel["Warn"] = "warn";
+  LogLevel["Error"] = "error";
+})(LogLevel || (exports.LogLevel = LogLevel = {}));
+const createExecutionItem = (transactionType, date, logs, warns, errors) => {
   let tempLogs = [];
   for (let i = 0; i < logs.length; i++) {
     let log = {
@@ -21,6 +31,28 @@ const createExecutionItem = (transactionType, date, logs) => {
       content: JSON.stringify(logs[i][0]),
     };
     tempLogs.push(log);
+  }
+  if (Array.isArray(warns)) {
+    for (let i = 0; i < warns.length; i++) {
+      if (warns[i].length > 0) {
+        let warn = {
+          createdAt: date,
+          level: "warn",
+          content: JSON.stringify(warns[i][0]),
+        };
+        tempLogs.push(warn);
+      }
+    }
+  }
+  if (Array.isArray(errors)) {
+    for (let i = 0; i < errors.length; i++) {
+      let error = {
+        createdAt: date,
+        level: "error",
+        content: errors[i],
+      };
+      tempLogs.push(error);
+    }
   }
   return {
     executionId: uuidv4(),
@@ -44,7 +76,8 @@ const run = async function (transaction, code, environmentvariables) {
     "(async () => { \n" +
     code +
     "\n if (typeof beforeTransaction === 'function') { " +
-    "\n let before = await beforeTransaction(authInput);\n if (before === false) {return false;} else { return true} } return true})()";
+    "\n let before = await beforeTransaction(authInput);\n if (before === false) {return false;} else { return true} }" +
+    " return true})()";
   const afterTransactionScript =
     "(async () => { \n" +
     code +
@@ -54,7 +87,9 @@ const run = async function (transaction, code, environmentvariables) {
     "(async () => { \n" +
     code +
     "\n if (typeof afterDecline === 'function') { " +
-    "\n let after = await afterDecline(authInput);\n return after} return false})()";
+    "\n let after = await afterDecline(authInput);" +
+    "\n return after}" +
+    " return false})()";
   const sb = {
     process: { env: JSON.parse(environmentvariables) },
     authInput: transaction,
@@ -65,14 +100,21 @@ const run = async function (transaction, code, environmentvariables) {
       },
     },
     logs: Array(),
+    warns: Array(),
+    errors: Array(),
     fetch: nodeFetch,
     moment: momentMini,
     lodash: _,
   };
-  let script = new vm.Script(beforeTransactionScript);
-  let results = await script.runInNewContext(sb, {
-    displayErrors: true,
-  });
+  let results;
+  try {
+    let script = new vm.Script(beforeTransactionScript);
+    results = await script.runInNewContext(sb, {
+      displayErrors: false,
+    });
+  } catch (e) {
+    sb.errors.push(e.toString());
+  }
   const sb2 = {
     process: { env: JSON.parse(environmentvariables) },
     authInput: transaction,
@@ -83,6 +125,8 @@ const run = async function (transaction, code, environmentvariables) {
       },
     },
     logs: Array(),
+    warns: Array(),
+    errors: Array(),
     fetch: nodeFetch,
     moment: momentMini,
     lodash: _,
@@ -93,16 +137,22 @@ const run = async function (transaction, code, environmentvariables) {
     second = afterDeclineScript;
     secondTransaction = TransactionType.AfterDecline;
   }
-  let script2 = new vm.Script(second);
-  await script2.runInNewContext(sb2, {
-    displayErrors: true,
-  });
+  try {
+    let script2 = new vm.Script(second);
+    results = await script2.runInNewContext(sb2, {
+      displayErrors: false,
+    });
+  } catch (e) {
+    sb2.errors.push(e.toString());
+  }
   let executionItems = [];
   executionItems.push(
     (0, exports.createExecutionItem)(
       TransactionType.BeforeTransaction,
       transaction.dateTime,
       sb.logs,
+      sb.warns,
+      sb.errors,
     ),
   );
   executionItems.push(
@@ -110,6 +160,8 @@ const run = async function (transaction, code, environmentvariables) {
       secondTransaction,
       transaction.dateTime,
       sb2.logs,
+      sb2.warns,
+      sb2.errors,
     ),
   );
   //  console.log(sb.logs)

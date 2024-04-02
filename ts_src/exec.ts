@@ -27,7 +27,13 @@ export enum TransactionType {
     AfterDecline = "after_decline",
 }
 
-export const createExecutionItem = (transactionType: TransactionType, date: string, logs: any[]): ExecutionItem => {
+export enum LogLevel {
+    Info = "info",
+    Warn = "warn",
+    Error = "error",
+}
+
+export const createExecutionItem = (transactionType: TransactionType, date: string, logs: any[], warns: any[], errors: any[]): ExecutionItem => {
     let tempLogs = [];
     for (let i = 0; i < logs.length; i++) {
       let log = {
@@ -36,6 +42,28 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
         content: JSON.stringify(logs[i][0]),
       };
       tempLogs.push(log);
+    }
+    if (Array.isArray(warns)) {
+        for (let i = 0; i < warns.length; i++) {
+            if (warns[i].length > 0) {
+            let warn = {
+            createdAt: date,
+            level: "warn",
+            content: JSON.stringify(warns[i][0]),
+            };
+            tempLogs.push(warn);
+        }
+      }
+    }
+    if (Array.isArray(errors)) {
+      for (let i = 0; i < errors.length; i++) {
+        let error = {
+        createdAt: date,
+        level: "error",
+        content: errors[i],
+        };
+        tempLogs.push(error);
+      }
     }
     return {
       executionId: uuidv4(),
@@ -58,8 +86,10 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
     const beforeTransactionScript =
       "(async () => { \n" +
       code +
+      
       "\n if (typeof beforeTransaction === 'function') { " +
-      "\n let before = await beforeTransaction(authInput);\n if (before === false) {return false;} else { return true} } return true})()";
+      "\n let before = await beforeTransaction(authInput);\n if (before === false) {return false;} else { return true} }" +
+      " return true})()";
     const afterTransactionScript =
       "(async () => { \n" +
       code +
@@ -69,7 +99,9 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
       "(async () => { \n" +
       code +
       "\n if (typeof afterDecline === 'function') { " +
-      "\n let after = await afterDecline(authInput);\n return after} return false})()";
+      "\n let after = await afterDecline(authInput);" +
+      "\n return after}" +
+      " return false})()";
     const sb = {
       process: { env: JSON.parse(environmentvariables) },
       authInput: transaction,
@@ -80,15 +112,21 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
         },
       },
       logs: Array<any>(),
+      warns: Array<any>(),
+      errors: Array<any>(),
       fetch: nodeFetch,
       moment: momentMini,
       lodash: _,
     };
-    let script = new vm.Script(beforeTransactionScript);
-    let results = await script.runInNewContext(sb, {
-      displayErrors: true,
-    });
-  
+    let results;
+    try {
+        let script = new vm.Script(beforeTransactionScript);
+        results = await script.runInNewContext(sb, {
+        displayErrors: false,
+        });
+    } catch (e: any) {
+        sb.errors.push(e.toString());
+    }
     const sb2 = {
       process: { env: JSON.parse(environmentvariables) },
       authInput: transaction,
@@ -99,6 +137,8 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
         },
       },
       logs: Array<any>(),
+      warns: Array<any>(),
+      errors: Array<any>(),
       fetch: nodeFetch,
       moment: momentMini,
       lodash: _,
@@ -109,22 +149,29 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
       second = afterDeclineScript;
       secondTransaction = TransactionType.AfterDecline;
     }
-    let script2 = new vm.Script(second);
-    await script2.runInNewContext(sb2, {
-      displayErrors: true,
-    });
-  
+
+    try {
+        let script2 = new vm.Script(second);
+        results = await script2.runInNewContext(sb2, {
+        displayErrors: false,
+        });
+    } catch (e: any) {
+        sb2.errors.push(e.toString());
+    }
+
     let executionItems = [];
     executionItems.push(
       createExecutionItem(
         TransactionType.BeforeTransaction,
         transaction.dateTime,
         sb.logs,
+        sb.warns,
+        sb.errors
       ),
     );
   
     executionItems.push(
-      createExecutionItem(secondTransaction, transaction.dateTime, sb2.logs),
+      createExecutionItem(secondTransaction, transaction.dateTime, sb2.logs, sb2.warns, sb2.errors),
     );
   
     //  console.log(sb.logs)
