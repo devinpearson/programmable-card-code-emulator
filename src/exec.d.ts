@@ -19,6 +19,11 @@ export declare enum TransactionType {
     AfterTransaction = "after_transaction",
     AfterDecline = "after_decline"
 }
-export declare const createExecutionItem: (transactionType: TransactionType, date: string, logs: any[]) => ExecutionItem;
+export declare enum LogLevel {
+    Info = "info",
+    Warn = "warn",
+    Error = "error"
+}
+export declare const createExecutionItem: (transactionType: TransactionType, date: string, logs: any[], warns: any[], errors: any[]) => ExecutionItem;
 export declare const run: (transaction: Transaction, code: string, environmentvariables: string) => Promise<Array<ExecutionItem>>;
 //# sourceMappingURL=exec.d.ts.map

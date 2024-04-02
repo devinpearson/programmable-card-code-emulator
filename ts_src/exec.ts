@@ -43,22 +43,28 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
       };
       tempLogs.push(log);
     }
-    for (let i = 0; i < warns.length; i++) {
-        let warn = {
-          createdAt: date,
-          level: "warn",
-          content: JSON.stringify(warns[i][0]),
-        };
-        tempLogs.push(warn);
+    if (Array.isArray(warns)) {
+        for (let i = 0; i < warns.length; i++) {
+            if (warns[i].length > 0) {
+            let warn = {
+            createdAt: date,
+            level: "warn",
+            content: JSON.stringify(warns[i][0]),
+            };
+            tempLogs.push(warn);
+        }
       }
+    }
+    if (Array.isArray(errors)) {
       for (let i = 0; i < errors.length; i++) {
         let error = {
-          createdAt: date,
-          level: "error",
-          content: JSON.stringify(warns[i][0]),
+        createdAt: date,
+        level: "error",
+        content: errors[i],
         };
         tempLogs.push(error);
       }
+    }
     return {
       executionId: uuidv4(),
       rootCodeFunctionId: uuidv4(),
@@ -80,8 +86,10 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
     const beforeTransactionScript =
       "(async () => { \n" +
       code +
+      
       "\n if (typeof beforeTransaction === 'function') { " +
-      "\n let before = await beforeTransaction(authInput);\n if (before === false) {return false;} else { return true} } return true})()";
+      "\n let before = await beforeTransaction(authInput);\n if (before === false) {return false;} else { return true} }" +
+      " return true})()";
     const afterTransactionScript =
       "(async () => { \n" +
       code +
@@ -91,7 +99,9 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
       "(async () => { \n" +
       code +
       "\n if (typeof afterDecline === 'function') { " +
-      "\n let after = await afterDecline(authInput);\n return after} return false})()";
+      "\n let after = await afterDecline(authInput);" +
+      "\n return after}" +
+      " return false})()";
     const sb = {
       process: { env: JSON.parse(environmentvariables) },
       authInput: transaction,
@@ -99,14 +109,6 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
         log: (...args: any[]) => {
           sb.logs.push(args);
           // console.log(...args);
-        },
-        warn: (...args: any[]) => {
-            sb.warns.push(args);
-            // console.warn(...args);
-        },
-        error: (...args: any[]) => {
-            sb.errors.push(args);
-            // console.error(...args);
         },
       },
       logs: Array<any>(),
@@ -116,11 +118,15 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
       moment: momentMini,
       lodash: _,
     };
-    let script = new vm.Script(beforeTransactionScript);
-    let results = await script.runInNewContext(sb, {
-      displayErrors: true,
-    });
-  
+    let results;
+    try {
+        let script = new vm.Script(beforeTransactionScript);
+        results = await script.runInNewContext(sb, {
+        displayErrors: false,
+        });
+    } catch (e: any) {
+        sb.errors.push(e.toString());
+    }
     const sb2 = {
       process: { env: JSON.parse(environmentvariables) },
       authInput: transaction,
@@ -128,14 +134,6 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
         log: (...args: any[]) => {
           sb2.logs.push(args);
           //console.log(...args);
-        },
-        warn: (...args: any[]) => {
-            sb2.warns.push(args);
-            // console.warn(...args);
-        },
-        error: (...args: any[]) => {
-            sb2.errors.push(args);
-            // console.error(...args);
         },
       },
       logs: Array<any>(),
@@ -151,11 +149,16 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
       second = afterDeclineScript;
       secondTransaction = TransactionType.AfterDecline;
     }
-    let script2 = new vm.Script(second);
-    await script2.runInNewContext(sb2, {
-      displayErrors: true,
-    });
-  
+
+    try {
+        let script2 = new vm.Script(second);
+        results = await script2.runInNewContext(sb2, {
+        displayErrors: false,
+        });
+    } catch (e: any) {
+        sb2.errors.push(e.toString());
+    }
+
     let executionItems = [];
     executionItems.push(
       createExecutionItem(

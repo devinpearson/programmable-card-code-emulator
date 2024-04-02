@@ -404,8 +404,7 @@ test("run vm with no afterDecline", async () => {
   expect(results.length).toBe(2);
 });
 
-test("with console warn", async () => {
-    console.error("console.warn")
+test("with error log", async () => {
     let dateTime = new Date();
     dateTime = dateTime.toISOString();
     const transaction = emu.createTransaction(
@@ -417,7 +416,7 @@ test("with console warn", async () => {
       "ZAF",
     );
     const code = `const beforeTransaction = async (authorization) => {
-            console.error(authorization);
+            if (authorization.currencyCode == zar)
             return false;
           };
           `;
@@ -432,9 +431,9 @@ test("with console warn", async () => {
     expect(results[0].createdAt).toBe(dateTime);
     expect(results[0].emailCount).toBe(0);
     expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
-    expect(results[0].logs[0].content).toBe(JSON.stringify(transaction));
+    expect(results[0].logs[0].content).toBe("ReferenceError: zar is not defined");
     expect(results[0].logs[0].createdAt).toBe(dateTime);
-    expect(results[0].logs[0].level).toBe("warn");
+    expect(results[0].logs[0].level).toBe("error");
     expect(results[0].pushNotificationCount).toBe(0);
     expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
     expect(results[0].sandbox).toBe(true);
