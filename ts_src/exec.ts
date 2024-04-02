@@ -27,7 +27,13 @@ export enum TransactionType {
     AfterDecline = "after_decline",
 }
 
-export const createExecutionItem = (transactionType: TransactionType, date: string, logs: any[]): ExecutionItem => {
+export enum LogLevel {
+    Info = "info",
+    Warn = "warn",
+    Error = "error",
+}
+
+export const createExecutionItem = (transactionType: TransactionType, date: string, logs: any[], warns: any[], errors: any[]): ExecutionItem => {
     let tempLogs = [];
     for (let i = 0; i < logs.length; i++) {
       let log = {
@@ -37,6 +43,22 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
       };
       tempLogs.push(log);
     }
+    for (let i = 0; i < warns.length; i++) {
+        let warn = {
+          createdAt: date,
+          level: "warn",
+          content: JSON.stringify(warns[i][0]),
+        };
+        tempLogs.push(warn);
+      }
+      for (let i = 0; i < errors.length; i++) {
+        let error = {
+          createdAt: date,
+          level: "error",
+          content: JSON.stringify(warns[i][0]),
+        };
+        tempLogs.push(error);
+      }
     return {
       executionId: uuidv4(),
       rootCodeFunctionId: uuidv4(),
@@ -78,8 +100,18 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
           sb.logs.push(args);
           // console.log(...args);
         },
+        warn: (...args: any[]) => {
+            sb.warns.push(args);
+            // console.warn(...args);
+        },
+        error: (...args: any[]) => {
+            sb.errors.push(args);
+            // console.error(...args);
+        },
       },
       logs: Array<any>(),
+      warns: Array<any>(),
+      errors: Array<any>(),
       fetch: nodeFetch,
       moment: momentMini,
       lodash: _,
@@ -97,8 +129,18 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
           sb2.logs.push(args);
           //console.log(...args);
         },
+        warn: (...args: any[]) => {
+            sb2.warns.push(args);
+            // console.warn(...args);
+        },
+        error: (...args: any[]) => {
+            sb2.errors.push(args);
+            // console.error(...args);
+        },
       },
       logs: Array<any>(),
+      warns: Array<any>(),
+      errors: Array<any>(),
       fetch: nodeFetch,
       moment: momentMini,
       lodash: _,
@@ -120,11 +162,13 @@ export const createExecutionItem = (transactionType: TransactionType, date: stri
         TransactionType.BeforeTransaction,
         transaction.dateTime,
         sb.logs,
+        sb.warns,
+        sb.errors
       ),
     );
   
     executionItems.push(
-      createExecutionItem(secondTransaction, transaction.dateTime, sb2.logs),
+      createExecutionItem(secondTransaction, transaction.dateTime, sb2.logs, sb2.warns, sb2.errors),
     );
   
     //  console.log(sb.logs)
