@@ -42,7 +42,9 @@ test('create execution item', () => {
   expect(executionItem.sandbox).toBe(true);
   expect(executionItem.type).toBe('before_transaction');
   expect(executionItem.authorizationApproved).toBe(null);
-  expect(new Date(executionItem.logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(executionItem.logs[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(executionItem.logs[0].level).toBe('info');
   expect(executionItem.logs[0].content).toBe(JSON.stringify('sample log'));
 });
@@ -114,20 +116,30 @@ test('run vm', async () => {
     JSON.stringify({ test: 'value' }),
   );
   expect(results[0].authorizationApproved).toBeNull();
-  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
-  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].completedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
+  expect(
+    new Date(results[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].logs[0].content).toBe(JSON.stringify(transaction));
-  expect(new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].logs[0].level).toBe('info');
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].startedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].updatedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
 });
 
 test('run vm with comment at end', async () => {
@@ -164,20 +176,30 @@ test('run vm with comment at end', async () => {
     JSON.stringify({ test: 'value' }),
   );
   expect(results[0].authorizationApproved).toBeNull();
-  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
-  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].completedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
+  expect(
+    new Date(results[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].logs[0].content).toBe(JSON.stringify(transaction));
-  expect(new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].logs[0].level).toBe('info');
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].startedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].updatedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
 });
 
 test('run vm with no return in begin', async () => {
@@ -213,20 +235,30 @@ test('run vm with no return in begin', async () => {
     JSON.stringify({ test: 'value' }),
   );
   expect(results[0].authorizationApproved).toBeNull();
-  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
-  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].completedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
+  expect(
+    new Date(results[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].logs[0].content).toBe(JSON.stringify(transaction));
-  expect(new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].logs[0].level).toBe('info');
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].startedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].updatedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
 });
 
 test('run vm with false return on begin', async () => {
@@ -264,20 +296,30 @@ test('run vm with false return on begin', async () => {
     JSON.stringify({ test: 'value' }),
   );
   expect(results[0].authorizationApproved).toBeNull();
-  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
-  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].completedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
+  expect(
+    new Date(results[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].logs[0].content).toBe(JSON.stringify(transaction));
-  expect(new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].logs[0].level).toBe('info');
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].startedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].updatedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
 });
 
 test('run vm with no beforeTransaction', async () => {
@@ -305,17 +347,25 @@ test('run vm with no beforeTransaction', async () => {
   );
   //   console.log(results);
   expect(results[0].authorizationApproved).toBeNull();
-  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
-  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].completedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
+  expect(
+    new Date(results[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].startedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].updatedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results.length).toBe(2);
 });
 
@@ -342,20 +392,30 @@ test('run vm with no afterTransaction', async () => {
   );
   //   console.log(results);
   expect(results[0].authorizationApproved).toBeNull();
-  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
-  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].completedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
+  expect(
+    new Date(results[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].logs[0].content).toBe(JSON.stringify(transaction));
-  expect(new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].logs[0].level).toBe('info');
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].startedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].updatedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results.length).toBe(2);
 });
 
@@ -381,20 +441,30 @@ test('run vm with no afterDecline', async () => {
   );
   //   console.log(results);
   expect(results[0].authorizationApproved).toBeNull();
-  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
-  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].completedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
+  expect(
+    new Date(results[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].logs[0].content).toBe(JSON.stringify(transaction));
-  expect(new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].logs[0].level).toBe('info');
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].startedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].updatedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results.length).toBe(2);
 });
 
@@ -420,19 +490,29 @@ test('with error log', async () => {
   );
   //   console.log(results);
   expect(results[0].authorizationApproved).toBeNull();
-  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
-  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].completedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
+  expect(
+    new Date(results[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].logs[0].content).toBe('ReferenceError: zar is not defined');
-  expect(new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].logs[0].level).toBe('error');
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].startedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(
+    new Date(results[0].updatedAt).getTime() - dateTime.getTime(),
+  ).toBeLessThan(2);
   expect(results.length).toBe(2);
 });
