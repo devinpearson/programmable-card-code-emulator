@@ -1,33 +1,50 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.run =
-  exports.createExecutionItem =
-  exports.LogLevel =
-  exports.TransactionType =
-    void 0;
-const { v4: uuidv4 } = require("uuid");
-const vm = require("vm");
-const nodeFetch = require("node-fetch");
-const momentMini = require("moment-mini");
-const _ = require("lodash");
-var TransactionType;
-(function (TransactionType) {
-  TransactionType["BeforeTransaction"] = "before_transaction";
-  TransactionType["AfterTransaction"] = "after_transaction";
-  TransactionType["AfterDecline"] = "after_decline";
-})(TransactionType || (exports.TransactionType = TransactionType = {}));
-var LogLevel;
-(function (LogLevel) {
-  LogLevel["Info"] = "info";
-  LogLevel["Warn"] = "warn";
-  LogLevel["Error"] = "error";
-})(LogLevel || (exports.LogLevel = LogLevel = {}));
-const createExecutionItem = (transactionType, date, logs, warns, errors) => {
+import type { Transaction } from './transaction.js';
+const { v4: uuidv4 } = require('uuid');
+const vm = require('vm');
+const nodeFetch = require('node-fetch');
+const momentMini = require('moment-mini');
+const _ = require('lodash');
+
+export interface ExecutionItem {
+  executionId: string;
+  rootCodeFunctionId: string;
+  sandbox: boolean;
+  type: string;
+  authorizationApproved: boolean | null;
+  logs: any[];
+  smsCount: number;
+  emailCount: number;
+  pushNotificationCount: number;
+  createdAt: string;
+  startedAt: string;
+  completedAt: string;
+  updatedAt: string;
+}
+
+export enum TransactionType {
+  BeforeTransaction = 'before_transaction',
+  AfterTransaction = 'after_transaction',
+  AfterDecline = 'after_decline',
+}
+
+export enum LogLevel {
+  Info = 'info',
+  Warn = 'warn',
+  Error = 'error',
+}
+
+export const createExecutionItem = (
+  transactionType: TransactionType,
+  date: string,
+  logs: any[],
+  warns: any[],
+  errors: any[],
+): ExecutionItem => {
   let tempLogs = [];
   for (let i = 0; i < logs.length; i++) {
     let log = {
       createdAt: date,
-      level: "info",
+      level: 'info',
       content: JSON.stringify(logs[i][0]),
     };
     tempLogs.push(log);
@@ -37,7 +54,7 @@ const createExecutionItem = (transactionType, date, logs, warns, errors) => {
       if (warns[i].length > 0) {
         let warn = {
           createdAt: date,
-          level: "warn",
+          level: 'warn',
           content: JSON.stringify(warns[i][0]),
         };
         tempLogs.push(warn);
@@ -48,7 +65,7 @@ const createExecutionItem = (transactionType, date, logs, warns, errors) => {
     for (let i = 0; i < errors.length; i++) {
       let error = {
         createdAt: date,
-        level: "error",
+        level: 'error',
         content: errors[i],
       };
       tempLogs.push(error);
@@ -70,38 +87,42 @@ const createExecutionItem = (transactionType, date, logs, warns, errors) => {
     updatedAt: date,
   };
 };
-exports.createExecutionItem = createExecutionItem;
-const run = async function (transaction, code, environmentvariables) {
+
+export const run = async function (
+  transaction: Transaction,
+  code: string,
+  environmentvariables: string,
+): Promise<Array<ExecutionItem>> {
   const beforeTransactionScript =
-    "(async () => { \n" +
+    '(async () => { \n' +
     code +
     "\n if (typeof beforeTransaction === 'function') { " +
-    "\n let before = await beforeTransaction(authInput);\n if (before === false) {return false;} else { return true} }" +
-    " return true})()";
+    '\n let before = await beforeTransaction(authInput);\n if (before === false) {return false;} else { return true} }' +
+    ' return true})()';
   const afterTransactionScript =
-    "(async () => { \n" +
+    '(async () => { \n' +
     code +
     "\n if (typeof afterTransaction === 'function') { " +
-    "\n let after = await afterTransaction(authInput);\n return after} return false})()";
+    '\n let after = await afterTransaction(authInput);\n return after} return false})()';
   const afterDeclineScript =
-    "(async () => { \n" +
+    '(async () => { \n' +
     code +
     "\n if (typeof afterDecline === 'function') { " +
-    "\n let after = await afterDecline(authInput);" +
-    "\n return after}" +
-    " return false})()";
+    '\n let after = await afterDecline(authInput);' +
+    '\n return after}' +
+    ' return false})()';
   const sb = {
     process: { env: JSON.parse(environmentvariables) },
     authInput: transaction,
     console: {
-      log: (...args) => {
+      log: (...args: any[]) => {
         sb.logs.push(args);
         // console.log(...args);
       },
     },
-    logs: Array(),
-    warns: Array(),
-    errors: Array(),
+    logs: Array<any>(),
+    warns: Array<any>(),
+    errors: Array<any>(),
     fetch: nodeFetch,
     moment: momentMini,
     lodash: _,
@@ -112,21 +133,21 @@ const run = async function (transaction, code, environmentvariables) {
     results = await script.runInNewContext(sb, {
       displayErrors: false,
     });
-  } catch (e) {
+  } catch (e: any) {
     sb.errors.push(e.toString());
   }
   const sb2 = {
     process: { env: JSON.parse(environmentvariables) },
     authInput: transaction,
     console: {
-      log: (...args) => {
+      log: (...args: any[]) => {
         sb2.logs.push(args);
         //console.log(...args);
       },
     },
-    logs: Array(),
-    warns: Array(),
-    errors: Array(),
+    logs: Array<any>(),
+    warns: Array<any>(),
+    errors: Array<any>(),
     fetch: nodeFetch,
     moment: momentMini,
     lodash: _,
@@ -137,17 +158,19 @@ const run = async function (transaction, code, environmentvariables) {
     second = afterDeclineScript;
     secondTransaction = TransactionType.AfterDecline;
   }
+
   try {
     let script2 = new vm.Script(second);
     results = await script2.runInNewContext(sb2, {
       displayErrors: false,
     });
-  } catch (e) {
+  } catch (e: any) {
     sb2.errors.push(e.toString());
   }
+
   let executionItems = [];
   executionItems.push(
-    (0, exports.createExecutionItem)(
+    createExecutionItem(
       TransactionType.BeforeTransaction,
       transaction.dateTime,
       sb.logs,
@@ -155,8 +178,9 @@ const run = async function (transaction, code, environmentvariables) {
       sb.errors,
     ),
   );
+
   executionItems.push(
-    (0, exports.createExecutionItem)(
+    createExecutionItem(
       secondTransaction,
       transaction.dateTime,
       sb2.logs,
@@ -164,7 +188,7 @@ const run = async function (transaction, code, environmentvariables) {
       sb2.errors,
     ),
   );
+
   //  console.log(sb.logs)
   return executionItems;
 };
-exports.run = run;

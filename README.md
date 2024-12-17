@@ -18,13 +18,13 @@ npm i programmable-card-code-emulator
 ### Usage
 
 Import the emulator into your code:
-```
-const emu = require("programmable-card-code-emulator");
+```typescript
+ import { createTransaction, run } from "programmable-card-code-emulator";
 ```
 
 Create a new transaction object:
-```
-const transaction = emu.createTransaction(
+```typescript
+const transaction = createTransaction(
     "ZAR", // Currency Code
     1000, // Amount in cents
     "0000", // Merchant code (MCC)
@@ -35,9 +35,10 @@ const transaction = emu.createTransaction(
 ```
 
 Run an emulation: 
-```
+```typescript
+const environmentalVariables = JSON.stringify({ value: 'string' })
 // return a array of executions, as seen on the live logs
-const result = emu.run(transaction, code, environmentalVariables);
+const result = run(transaction, code, environmentalVariables);
 ```
 
 ## Todo List
