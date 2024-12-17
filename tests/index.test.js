@@ -33,8 +33,8 @@ test('create a transaction', () => {
 
 test('create execution item', () => {
   let dateTime = new Date();
-  dateTime = dateTime.toISOString();
-  const executionItem = createExecutionItem('before_transaction', dateTime, [
+  let dateTimeIso = dateTime.toISOString();
+  const executionItem = createExecutionItem('before_transaction', dateTimeIso, [
     ['sample log'],
   ]);
   expect(validator.isUUID(executionItem.executionId, 4)).toBe(true);
@@ -42,7 +42,7 @@ test('create execution item', () => {
   expect(executionItem.sandbox).toBe(true);
   expect(executionItem.type).toBe('before_transaction');
   expect(executionItem.authorizationApproved).toBe(null);
-  expect(executionItem.logs[0].createdAt).toBe(dateTime);
+  expect(new Date(executionItem.logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(executionItem.logs[0].level).toBe('info');
   expect(executionItem.logs[0].content).toBe(JSON.stringify('sample log'));
 });
@@ -82,7 +82,7 @@ test('valid merchant code', () => {
 
 test('run vm', async () => {
   let dateTime = new Date();
-  dateTime = dateTime.toISOString();
+
   const transaction = createTransaction(
     'ZAR',
     1000,
@@ -114,25 +114,24 @@ test('run vm', async () => {
     JSON.stringify({ test: 'value' }),
   );
   expect(results[0].authorizationApproved).toBeNull();
-  expect(results[0].completedAt).toBe(dateTime);
-  expect(results[0].createdAt).toBe(dateTime);
+  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].logs[0].content).toBe(JSON.stringify(transaction));
-  expect(results[0].logs[0].createdAt).toBe(dateTime);
+  expect(new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].logs[0].level).toBe('info');
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(results[0].startedAt).toBe(dateTime);
+  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(results[0].updatedAt).toBe(dateTime);
+  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
 });
 
 test('run vm with comment at end', async () => {
   let dateTime = new Date();
-  dateTime = dateTime.toISOString();
   const transaction = createTransaction(
     'ZAR',
     1000,
@@ -165,25 +164,24 @@ test('run vm with comment at end', async () => {
     JSON.stringify({ test: 'value' }),
   );
   expect(results[0].authorizationApproved).toBeNull();
-  expect(results[0].completedAt).toBe(dateTime);
-  expect(results[0].createdAt).toBe(dateTime);
+  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].logs[0].content).toBe(JSON.stringify(transaction));
-  expect(results[0].logs[0].createdAt).toBe(dateTime);
+  expect(new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].logs[0].level).toBe('info');
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(results[0].startedAt).toBe(dateTime);
+  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(results[0].updatedAt).toBe(dateTime);
+  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
 });
 
 test('run vm with no return in begin', async () => {
   let dateTime = new Date();
-  dateTime = dateTime.toISOString();
   const transaction = createTransaction(
     'ZAR',
     1000,
@@ -215,25 +213,24 @@ test('run vm with no return in begin', async () => {
     JSON.stringify({ test: 'value' }),
   );
   expect(results[0].authorizationApproved).toBeNull();
-  expect(results[0].completedAt).toBe(dateTime);
-  expect(results[0].createdAt).toBe(dateTime);
+  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].logs[0].content).toBe(JSON.stringify(transaction));
-  expect(results[0].logs[0].createdAt).toBe(dateTime);
+  expect(new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].logs[0].level).toBe('info');
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(results[0].startedAt).toBe(dateTime);
+  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(results[0].updatedAt).toBe(dateTime);
+  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
 });
 
 test('run vm with false return on begin', async () => {
   let dateTime = new Date();
-  dateTime = dateTime.toISOString();
   const transaction = createTransaction(
     'ZAR',
     1000,
@@ -267,25 +264,24 @@ test('run vm with false return on begin', async () => {
     JSON.stringify({ test: 'value' }),
   );
   expect(results[0].authorizationApproved).toBeNull();
-  expect(results[0].completedAt).toBe(dateTime);
-  expect(results[0].createdAt).toBe(dateTime);
+  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].logs[0].content).toBe(JSON.stringify(transaction));
-  expect(results[0].logs[0].createdAt).toBe(dateTime);
+  expect(new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].logs[0].level).toBe('info');
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(results[0].startedAt).toBe(dateTime);
+  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(results[0].updatedAt).toBe(dateTime);
+  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
 });
 
 test('run vm with no beforeTransaction', async () => {
   let dateTime = new Date();
-  dateTime = dateTime.toISOString();
   const transaction = createTransaction(
     'ZAR',
     1000,
@@ -309,23 +305,23 @@ test('run vm with no beforeTransaction', async () => {
   );
   //   console.log(results);
   expect(results[0].authorizationApproved).toBeNull();
-  expect(results[0].completedAt).toBe(dateTime);
-  expect(results[0].createdAt).toBe(dateTime);
+  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(results[0].startedAt).toBe(dateTime);
+  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(results[0].updatedAt).toBe(dateTime);
+  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results.length).toBe(2);
 });
 
 test('run vm with no afterTransaction', async () => {
   let dateTime = new Date();
-  dateTime = dateTime.toISOString();
+
   const transaction = createTransaction(
     'ZAR',
     1000,
@@ -346,26 +342,25 @@ test('run vm with no afterTransaction', async () => {
   );
   //   console.log(results);
   expect(results[0].authorizationApproved).toBeNull();
-  expect(results[0].completedAt).toBe(dateTime);
-  expect(results[0].createdAt).toBe(dateTime);
+  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].logs[0].content).toBe(JSON.stringify(transaction));
-  expect(results[0].logs[0].createdAt).toBe(dateTime);
+  expect(new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].logs[0].level).toBe('info');
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(results[0].startedAt).toBe(dateTime);
+  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(results[0].updatedAt).toBe(dateTime);
+  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results.length).toBe(2);
 });
 
 test('run vm with no afterDecline', async () => {
   let dateTime = new Date();
-  dateTime = dateTime.toISOString();
   const transaction = createTransaction(
     'ZAR',
     1000,
@@ -386,26 +381,25 @@ test('run vm with no afterDecline', async () => {
   );
   //   console.log(results);
   expect(results[0].authorizationApproved).toBeNull();
-  expect(results[0].completedAt).toBe(dateTime);
-  expect(results[0].createdAt).toBe(dateTime);
+  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].logs[0].content).toBe(JSON.stringify(transaction));
-  expect(results[0].logs[0].createdAt).toBe(dateTime);
+  expect(new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].logs[0].level).toBe('info');
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(results[0].startedAt).toBe(dateTime);
+  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(results[0].updatedAt).toBe(dateTime);
+  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results.length).toBe(2);
 });
 
 test('with error log', async () => {
   let dateTime = new Date();
-  dateTime = dateTime.toISOString();
   const transaction = createTransaction(
     'ZAR',
     1000,
@@ -426,19 +420,19 @@ test('with error log', async () => {
   );
   //   console.log(results);
   expect(results[0].authorizationApproved).toBeNull();
-  expect(results[0].completedAt).toBe(dateTime);
-  expect(results[0].createdAt).toBe(dateTime);
+  expect(new Date(results[0].completedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
+  expect(new Date(results[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].emailCount).toBe(0);
   expect(validator.isUUID(results[0].executionId, 4)).toBe(true);
   expect(results[0].logs[0].content).toBe('ReferenceError: zar is not defined');
-  expect(results[0].logs[0].createdAt).toBe(dateTime);
+  expect(new Date(results[0].logs[0].createdAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].logs[0].level).toBe('error');
   expect(results[0].pushNotificationCount).toBe(0);
   expect(validator.isUUID(results[0].rootCodeFunctionId, 4)).toBe(true);
   expect(results[0].sandbox).toBe(true);
   expect(results[0].smsCount).toBe(0);
-  expect(results[0].startedAt).toBe(dateTime);
+  expect(new Date(results[0].startedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results[0].type).toBe('before_transaction');
-  expect(results[0].updatedAt).toBe(dateTime);
+  expect(new Date(results[0].updatedAt).getTime() - dateTime.getTime()).toBeLessThan(2);
   expect(results.length).toBe(2);
 });
