@@ -29,7 +29,6 @@
   "license": "MIT",
   "description": "An emulator for the Programmable Card Code Lamda function",
   "dependencies": {
-    "lodash": "^4.17.21",
     "moment-mini": "^2.29.4",
     "node-fetch": "^2.7.0",
     "uuid": "^9.0.1"
