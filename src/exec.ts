@@ -1,8 +1,16 @@
 import type { Transaction } from './transaction.js';
+<<<<<<< HEAD
 import { v4 as uuidv4 } from 'uuid';
 import vm from 'vm';
 import nodeFetch from 'node-fetch';
 import momentMini from 'moment-mini';
+=======
+const { v4: uuidv4 } = require('uuid');
+const vm = require('vm');
+const nodeFetch = require('node-fetch');
+const momentMini = require('moment-mini');
+const _ = require('lodash');
+>>>>>>> 5aae76f (Refactored to use tsc and devcontainer (#3))
 
 export interface ExecutionItem {
   executionId: string;
