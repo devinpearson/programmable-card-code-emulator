@@ -1,6 +1,6 @@
 {
   "name": "programmable-card-code-emulator",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -38,6 +38,8 @@
     "@arethetypeswrong/cli": "^0.17.0",
     "@changesets/cli": "^2.27.10",
     "@types/node": "^20.10.7",
+    "@types/node-fetch": "^2.6.12",
+    "@types/uuid": "^10.0.0",
     "prettier": "3.1.1",
     "typescript": "^5.3.3",
     "validator": "^13.11.0",

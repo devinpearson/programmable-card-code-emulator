@@ -1,9 +1,8 @@
 import type { Transaction } from './transaction.js';
-const { v4: uuidv4 } = require('uuid');
-const vm = require('vm');
-const nodeFetch = require('node-fetch');
-const momentMini = require('moment-mini');
-const _ = require('lodash');
+import { v4 as uuidv4 } from 'uuid';
+import vm from 'vm';
+import nodeFetch from 'node-fetch';
+import momentMini from 'moment-mini';
 
 export interface ExecutionItem {
   executionId: string;
@@ -125,7 +124,6 @@ export const run = async function (
     errors: Array<any>(),
     fetch: nodeFetch,
     moment: momentMini,
-    lodash: _,
   };
   let results;
   try {
@@ -150,7 +148,6 @@ export const run = async function (
     errors: Array<any>(),
     fetch: nodeFetch,
     moment: momentMini,
-    lodash: _,
   };
   let second = afterTransactionScript;
   let secondTransaction = TransactionType.AfterTransaction;
