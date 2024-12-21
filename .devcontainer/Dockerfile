@@ -1,4 +1,4 @@
-FROM node:22.12.0
+FROM node:20.11.0
 #FROM nikolaik/python-nodejs:latest
 # Last version check on 10 Apr 2024.
 # Check for new versions at https://nodejs.org/en/ or at https://hub.docker.com/_/node
