@@ -39,4 +39,3 @@ services:
 
 networks:
   developer:
-
