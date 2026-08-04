@@ -1,6 +1,6 @@
 # programmable-card-code-emulator
 
-## 1.4.3
+## 2.0.1
 
 ### Patch Changes
 
