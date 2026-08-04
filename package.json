@@ -1,6 +1,6 @@
 {
   "name": "programmable-card-code-emulator",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -29,6 +29,10 @@
   "author": "Devin Pearson",
   "license": "MIT",
   "description": "An emulator for the Programmable Card Code Lamda function",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devinpearson/programmable-card-code-emulator.git"
+  },
   "dependencies": {
     "moment-mini": "^2.29.4",
     "node-fetch": "^3.3.2",
@@ -44,7 +48,10 @@
     "tsup": "^8.3.5",
     "typescript": "^5.3.3",
     "validator": "^13.11.0",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "esbuild": "0.28.1"
   },
   "exports": {
     "./package.json": "./package.json",
