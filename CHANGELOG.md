@@ -1,5 +1,12 @@
 # programmable-card-code-emulator
 
+## 1.4.3
+
+### Patch Changes
+
+- Override esbuild to resolve audit vulnerability
+- Update GitHub Actions to Node 24 and add npm publish workflow
+
 ## 1.4.1
 
 ### Patch Changes
