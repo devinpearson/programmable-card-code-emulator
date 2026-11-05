@@ -869,3 +869,53 @@ test('an un-awaited fetch still completes after a normal run', async () => {
     await server.close();
   }
 });
+
+test('fetch rejects a streamed response with no Content-Length once it passes maxResponseBytes', async () => {
+  // Three 600-byte chunks with no Content-Length (chunked encoding), so the
+  // cap can only be enforced by counting bytes as they arrive.
+  const server = await startServer(async (_req, res) => {
+    for (let i = 0; i < 3; i++) {
+      res.write('y'.repeat(600));
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    res.end();
+  });
+  const sandbox = new IsolatedVmSandbox({ maxResponseBytes: 1024 });
+  try {
+    const code = `const beforeTransaction = async (a) => {
+          try {
+            await (await fetch('${server.url}')).text();
+            console.log('read');
+          } catch (e) {
+            console.log('rejected');
+          }
+          return true;
+        };`;
+    const results = await run(txn(), code, JSON.stringify({}), sandbox);
+    expect(results[0].logs[0].content).toBe(JSON.stringify('rejected'));
+  } finally {
+    sandbox.dispose();
+    await server.close();
+  }
+});
+
+test('fetch decodes UTF-8 split across chunks', async () => {
+  const bytes = Buffer.from('héllo € ✓', 'utf8');
+  // Split inside the multi-byte '€' so a naive per-chunk decode would garble it.
+  const cut = bytes.indexOf(Buffer.from('€', 'utf8')) + 1;
+  const server = await startServer(async (_req, res) => {
+    res.write(bytes.subarray(0, cut));
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    res.end(bytes.subarray(cut));
+  });
+  try {
+    const code = `const beforeTransaction = async (a) => {
+          console.log(await (await fetch('${server.url}')).text());
+          return true;
+        };`;
+    const results = await run(txn(), code, JSON.stringify({}));
+    expect(results[0].logs[0].content).toBe(JSON.stringify('héllo € ✓'));
+  } finally {
+    await server.close();
+  }
+});
