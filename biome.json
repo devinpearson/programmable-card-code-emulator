@@ -11,7 +11,7 @@
       "!dist",
       "!reports",
       "!.stryker-tmp",
-      "!README.md",
+      "!**/*.md",
       "!package-lock.json",
       "!**/*.yml",
       "!**/*.yaml"
