@@ -516,3 +516,122 @@ test('with error log', async () => {
   ).toBeLessThan(2);
   expect(results.length).toBe(2);
 });
+
+test('moment is available in the sandbox', async () => {
+  const transaction = createTransaction(
+    'ZAR',
+    1000,
+    '0000',
+    'Test Merchant',
+    'Test City',
+    'ZAF',
+  );
+  const code = `const beforeTransaction = async (authorization) => {
+          console.log(moment('2020-01-02').year());
+          return true;
+        };
+        `;
+  const results = await run(
+    transaction,
+    code,
+    JSON.stringify({ test: 'value' }),
+  );
+  expect(results[0].logs[0].content).toBe(JSON.stringify(2020));
+});
+
+test('fetch is available in the sandbox', async () => {
+  const transaction = createTransaction(
+    'ZAR',
+    1000,
+    '0000',
+    'Test Merchant',
+    'Test City',
+    'ZAF',
+  );
+  const code = `const beforeTransaction = async (authorization) => {
+          console.log(typeof fetch);
+          return true;
+        };
+        `;
+  const results = await run(
+    transaction,
+    code,
+    JSON.stringify({ test: 'value' }),
+  );
+  expect(results[0].logs[0].content).toBe(JSON.stringify('function'));
+});
+
+test('env variables are exposed via process.env', async () => {
+  const transaction = createTransaction(
+    'ZAR',
+    1000,
+    '0000',
+    'Test Merchant',
+    'Test City',
+    'ZAF',
+  );
+  const code = `const beforeTransaction = async (authorization) => {
+          console.log(process.env.secret);
+          return true;
+        };
+        `;
+  const results = await run(
+    transaction,
+    code,
+    JSON.stringify({ secret: 'shhh' }),
+  );
+  expect(results[0].logs[0].content).toBe(JSON.stringify('shhh'));
+});
+
+test('sandbox is isolated from the host process', async () => {
+  const transaction = createTransaction(
+    'ZAR',
+    1000,
+    '0000',
+    'Test Merchant',
+    'Test City',
+    'ZAF',
+  );
+  // The built-in Node `vm` module is not a security boundary: code like this
+  // can reach the host's `process`. In a real isolate there is no host
+  // `process.exit`, `require`, or module graph to reach, so these are
+  // undefined rather than live host references.
+  const code = `const beforeTransaction = async (authorization) => {
+          console.log(typeof process.exit);
+          console.log(typeof process.mainModule);
+          console.log(typeof require);
+          return true;
+        };
+        `;
+  const results = await run(
+    transaction,
+    code,
+    JSON.stringify({ test: 'value' }),
+  );
+  expect(results[0].logs[0].content).toBe(JSON.stringify('undefined'));
+  expect(results[0].logs[1].content).toBe(JSON.stringify('undefined'));
+  expect(results[0].logs[2].content).toBe(JSON.stringify('undefined'));
+});
+
+test('a supplied sandbox is reused and not disposed by run', async () => {
+  const { IsolatedVmSandbox } = await import('../src/index');
+  const transaction = createTransaction(
+    'ZAR',
+    1000,
+    '0000',
+    'Test Merchant',
+    'Test City',
+    'ZAF',
+  );
+  const code = `const beforeTransaction = async (authorization) => {
+          console.log('hello');
+          return true;
+        };
+        `;
+  const sandbox = new IsolatedVmSandbox();
+  const first = await run(transaction, code, JSON.stringify({}), sandbox);
+  const second = await run(transaction, code, JSON.stringify({}), sandbox);
+  expect(first[0].logs[0].content).toBe(JSON.stringify('hello'));
+  expect(second[0].logs[0].content).toBe(JSON.stringify('hello'));
+  sandbox.dispose();
+});
