@@ -1,17 +1,32 @@
 import type { Transaction } from './transaction.js';
 
 /**
+ * A structured form of whatever the card code threw. `name`/`message` mirror a
+ * JS error (e.g. `"ReferenceError"` / `"foo is not defined"`); `stack` is
+ * included when the engine provides one.
+ */
+export interface SandboxError {
+  name: string;
+  message: string;
+  stack?: string;
+}
+
+/**
  * The result of running a single script inside a sandbox.
  *
- * `logs` holds the arguments of each `console.log` call, in order, so the
- * caller can shape them into execution-item log entries. `error`, when set,
- * is the string form of whatever the script threw (e.g.
- * `"ReferenceError: foo is not defined"`).
+ * `logs`, `warns` and `errors` hold the captured `console.log`/`console.warn`/
+ * `console.error` output, split by level, so the caller can shape them into
+ * execution-item log entries. `logs` and `warns` keep the raw call arguments
+ * (each entry is the argument list of one call); `errors` holds ready-to-use
+ * content strings, with the thrown error (if any) appended last. `error`, when
+ * set, is the structured form of that thrown error.
  */
 export interface SandboxRunResult {
   value: unknown;
   logs: unknown[][];
-  error?: string;
+  warns: unknown[][];
+  errors: string[];
+  error?: SandboxError;
 }
 
 /**
@@ -25,7 +40,7 @@ export interface SandboxRunResult {
  * The code passed to {@link Sandbox.run} is given these globals:
  *   - `authInput`  the transaction under test
  *   - `process`    `{ env }` from the supplied environment variables
- *   - `console`    with `log` captured into {@link SandboxRunResult.logs}
+ *   - `console`    with `log`/`info`/`debug`/`warn`/`error` captured
  *   - `fetch`      a fetch implementation
  *   - `moment`     the moment date library
  */
@@ -33,10 +48,11 @@ export interface Sandbox {
   /**
    * Run `script` with the given environment variables and transaction.
    *
-   * Script-level errors (thrown by the card code) are reported via
-   * {@link SandboxRunResult.error} rather than rejecting the promise, so that
-   * any logs emitted before the error are still returned. The promise rejects
-   * only on sandbox infrastructure failures.
+   * Script-level errors (thrown by the card code, including hitting an
+   * execution timeout) are reported via {@link SandboxRunResult.error} and
+   * appended to {@link SandboxRunResult.errors}, rather than rejecting the
+   * promise, so that any output emitted before the error is still returned.
+   * The promise rejects only on sandbox infrastructure failures.
    */
   run(
     script: string,

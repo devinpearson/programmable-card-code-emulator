@@ -111,16 +111,17 @@ export const run = async function (
     '\n return after}' +
     ' return false})()';
 
-  const env = JSON.parse(environmentvariables);
+  let env: Record<string, unknown>;
+  try {
+    env = JSON.parse(environmentvariables);
+  } catch (e: any) {
+    throw new Error(`Invalid environment variables JSON: ${e.message}`);
+  }
 
   // Use the supplied sandbox, or create (and own) one for this run. The
   // emulator depends only on the Sandbox interface, so the execution engine
   // can be swapped without touching this function or its callers.
   const ownSandbox = sandbox ?? new IsolatedVmSandbox();
-
-  // Captured console output and errors for each of the two phases.
-  const sb = { logs: Array<any>(), warns: Array<any>(), errors: Array<any>() };
-  const sb2 = { logs: Array<any>(), warns: Array<any>(), errors: Array<any>() };
 
   try {
     const first = await ownSandbox.run(
@@ -128,11 +129,7 @@ export const run = async function (
       env,
       transaction,
     );
-    sb.logs = first.logs;
-    if (first.error) {
-      sb.errors.push(first.error);
-    }
-    let results = first.value;
+    const results = first.value;
 
     let second = afterTransactionScript;
     let secondTransaction = TransactionType.AfterTransaction;
@@ -142,19 +139,15 @@ export const run = async function (
     }
 
     const secondResult = await ownSandbox.run(second, env, transaction);
-    sb2.logs = secondResult.logs;
-    if (secondResult.error) {
-      sb2.errors.push(secondResult.error);
-    }
 
     const executionItems = [];
     executionItems.push(
       createExecutionItem(
         TransactionType.BeforeTransaction,
         transaction.dateTime,
-        sb.logs,
-        sb.warns,
-        sb.errors,
+        first.logs,
+        first.warns,
+        first.errors,
       ),
     );
 
@@ -162,9 +155,9 @@ export const run = async function (
       createExecutionItem(
         secondTransaction,
         transaction.dateTime,
-        sb2.logs,
-        sb2.warns,
-        sb2.errors,
+        secondResult.logs,
+        secondResult.warns,
+        secondResult.errors,
       ),
     );
 

@@ -3,52 +3,108 @@ import { readFileSync } from 'node:fs';
 import ivm from 'isolated-vm';
 import nodeFetch from 'node-fetch';
 import type { Transaction } from './transaction.js';
-import type { Sandbox, SandboxRunResult } from './sandbox.js';
+import type { Sandbox, SandboxError, SandboxRunResult } from './sandbox.js';
 
 const require = createRequire(import.meta.url);
 
 /**
- * Source of the moment date library, read once and evaluated inside each
- * isolate so that card code sees a real in-isolate `moment`. moment-mini ships
- * a UMD bundle; with no `module`/`exports`/`define` present it falls through to
- * assigning `moment` onto the global object, which is exactly what we want.
+ * A V8 startup snapshot with the moment date library already evaluated into the
+ * global, built once and shared by every isolate. Creating a context from the
+ * snapshot is markedly cheaper than re-running moment's ~58 KB bundle for each
+ * context, and every context created from the isolate inherits `moment`.
+ *
+ * moment-mini ships a UMD bundle; with no `module`/`exports`/`define` present
+ * it falls through to assigning `moment` onto the global object.
  */
-let momentSource: string | undefined;
-function getMomentSource(): string {
-  if (momentSource === undefined) {
-    momentSource = readFileSync(require.resolve('moment-mini'), 'utf8');
+let momentSnapshot: ivm.ExternalCopy<ArrayBuffer> | undefined;
+function getMomentSnapshot(): ivm.ExternalCopy<ArrayBuffer> {
+  if (momentSnapshot === undefined) {
+    const source = readFileSync(require.resolve('moment-mini'), 'utf8');
+    momentSnapshot = ivm.Isolate.createSnapshot([{ code: source }]);
   }
-  return momentSource;
+  return momentSnapshot;
 }
 
 /**
- * Bootstrap installed into every context before the card code runs. It wires
- * the host bridges (`_hostLog`, `_hostFetch`) up to the `console` and `fetch`
- * globals the card code expects. moment is loaded separately (its own script)
- * so the two can be compiled once and reused across contexts.
+ * Bootstrap run in every context before the card code. It captures the per-run
+ * host bridges (`_hostLog`, `_hostFetch`) into closures, removes them from the
+ * global so card code cannot see or call them directly, and installs the
+ * `console` and `fetch` globals that card code expects. moment is already
+ * present via the snapshot.
  */
 const BOOTSTRAP = `
-  globalThis.global = globalThis;
-  globalThis.console = {
-    log: (...args) => { _hostLog.applySync(undefined, [JSON.stringify(args ?? [])]); },
-  };
-  globalThis.fetch = async (url, opts) => {
-    const json = await _hostFetch.apply(
-      undefined,
-      [String(url), opts === undefined ? undefined : JSON.stringify(opts)],
-      { result: { promise: true, copy: true } },
-    );
-    const r = JSON.parse(json);
-    return {
-      status: r.status,
-      statusText: r.statusText,
-      ok: r.ok,
-      headers: r.headers,
-      json: async () => JSON.parse(r.body),
-      text: async () => r.body,
+  (() => {
+    const hostLog = _hostLog;
+    const hostFetch = _hostFetch;
+    delete globalThis._hostLog;
+    delete globalThis._hostFetch;
+
+    // Serialize console arguments defensively: BigInt is coerced to a string
+    // and circular structures fall back to their String() form, so a log call
+    // can never itself throw.
+    const serialize = (args) => {
+      try {
+        return JSON.stringify(args, (_k, v) =>
+          typeof v === 'bigint' ? v.toString() : v,
+        );
+      } catch (_e) {
+        try {
+          return JSON.stringify(args.map((a) => String(a)));
+        } catch (_e2) {
+          return '[]';
+        }
+      }
     };
-  };
+    const send = (level, args) =>
+      hostLog.applySync(undefined, [level, serialize(args)]);
+
+    globalThis.global = globalThis;
+    globalThis.console = {
+      log: (...args) => send('info', args),
+      info: (...args) => send('info', args),
+      debug: (...args) => send('info', args),
+      warn: (...args) => send('warn', args),
+      error: (...args) => send('error', args),
+    };
+
+    // NOTE: fetch is intentionally unrestricted (localhost and private hosts
+    // are reachable) so that local callbacks can be exercised during
+    // development. The response is surfaced as text; binary bodies and
+    // duplicate headers (e.g. set-cookie) are not preserved.
+    globalThis.fetch = async (url, opts) => {
+      const json = await hostFetch.apply(
+        undefined,
+        [String(url), opts === undefined ? undefined : JSON.stringify(opts)],
+        { result: { promise: true, copy: true } },
+      );
+      const r = JSON.parse(json);
+      return {
+        status: r.status,
+        statusText: r.statusText,
+        ok: r.ok,
+        headers: r.headers,
+        json: async () => JSON.parse(r.body),
+        text: async () => r.body,
+      };
+    };
+  })();
 `;
+
+export interface IsolatedVmSandboxOptions {
+  /** Isolate heap limit in MB. Default 128. */
+  memoryLimit?: number;
+  /**
+   * Maximum time a single script may run, in milliseconds. Default 5000.
+   * Pass 0 (or a negative value) to disable the timeout entirely.
+   *
+   * CPU-bound code (e.g. `while (true) {}`) is terminated by V8 and the sandbox
+   * stays usable. Code that hangs without using CPU (e.g. awaiting a promise
+   * that never settles, or an unresponsive `fetch`) is caught by a wall-clock
+   * guard shortly after; that case disposes the isolate, and the next `run`
+   * transparently rebuilds one.
+   */
+  timeoutMs?: number;
+}
 
 /**
  * A {@link Sandbox} backed by [isolated-vm](https://github.com/laverdet/isolated-vm).
@@ -60,18 +116,38 @@ const BOOTSTRAP = `
  * passed in directly.
  *
  * Every {@link run} executes in a fresh context so that state never leaks
- * between the before- and after-transaction phases.
+ * between the before- and after-transaction phases. A single sandbox can be
+ * reused across many runs (and is cheaper to reuse than to recreate); it is
+ * safe to call {@link dispose} more than once, and the instance also implements
+ * `Symbol.dispose` for `using` declarations.
  */
 export class IsolatedVmSandbox implements Sandbox {
-  private readonly isolate: ivm.Isolate;
-  private readonly momentScript: ivm.Script;
-  private readonly bootstrapScript: ivm.Script;
+  private readonly memoryLimit: number;
+  private readonly timeoutMs: number;
+  private isolate: ivm.Isolate | undefined;
+  private bootstrapScript: ivm.Script | undefined;
 
-  constructor(options: { memoryLimit?: number } = {}) {
-    this.isolate = new ivm.Isolate({ memoryLimit: options.memoryLimit ?? 128 });
-    // Scripts are compiled once per isolate and can run in any of its contexts.
-    this.momentScript = this.isolate.compileScriptSync(getMomentSource());
-    this.bootstrapScript = this.isolate.compileScriptSync(BOOTSTRAP);
+  constructor(options: IsolatedVmSandboxOptions = {}) {
+    this.memoryLimit = options.memoryLimit ?? 128;
+    this.timeoutMs = options.timeoutMs ?? 5000;
+    this.ensureIsolate();
+  }
+
+  /** (Re)create the isolate and its compiled bootstrap if needed. */
+  private ensureIsolate(): { isolate: ivm.Isolate; bootstrap: ivm.Script } {
+    if (
+      this.isolate === undefined ||
+      this.isolate.isDisposed ||
+      this.bootstrapScript === undefined
+    ) {
+      this.isolate = new ivm.Isolate({
+        memoryLimit: this.memoryLimit,
+        snapshot: getMomentSnapshot(),
+      });
+      // Compiled once per isolate; runnable in any of its contexts.
+      this.bootstrapScript = this.isolate.compileScriptSync(BOOTSTRAP);
+    }
+    return { isolate: this.isolate, bootstrap: this.bootstrapScript };
   }
 
   async run(
@@ -79,8 +155,14 @@ export class IsolatedVmSandbox implements Sandbox {
     env: Record<string, unknown>,
     authInput: Transaction,
   ): Promise<SandboxRunResult> {
+    const { isolate, bootstrap } = this.ensureIsolate();
     const logs: unknown[][] = [];
-    const context = await this.isolate.createContext();
+    const warns: unknown[][] = [];
+    const errors: string[] = [];
+
+    const context = await isolate.createContext();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let wallClockTimedOut = false;
     try {
       const jail = context.global;
 
@@ -88,11 +170,19 @@ export class IsolatedVmSandbox implements Sandbox {
       // JSON strings so only plain, copyable data is ever transferred.
       await jail.set(
         '_hostLog',
-        new ivm.Reference((json: string) => {
+        new ivm.Reference((level: string, json: string) => {
+          let args: unknown[];
           try {
-            logs.push(JSON.parse(json) as unknown[]);
+            args = JSON.parse(json) as unknown[];
           } catch {
-            logs.push([json]);
+            args = [json];
+          }
+          if (level === 'warn') {
+            warns.push(args);
+          } else if (level === 'error') {
+            errors.push(contentOf(args));
+          } else {
+            logs.push(args);
           }
         }),
       );
@@ -120,32 +210,92 @@ export class IsolatedVmSandbox implements Sandbox {
         }),
       );
 
-      // Copyable globals.
+      // Wire console/fetch, then expose the copyable globals.
+      await bootstrap.run(context);
       await jail.set('process', new ivm.ExternalCopy({ env }).copyInto());
       await jail.set('authInput', new ivm.ExternalCopy(authInput).copyInto());
 
-      // Install moment and the console/fetch bridges.
-      await this.momentScript.run(context);
-      await this.bootstrapScript.run(context);
-
       // Run the card code. `promise: true` awaits the async IIFE; `copy: true`
-      // brings the resolved value back across the boundary as plain data.
-      const userScript = await this.isolate.compileScript(script);
-      const value = await userScript.run(context, {
+      // brings the resolved value back across the boundary as plain data. The
+      // CPU timeout terminates runaway synchronous code without killing the
+      // isolate.
+      const userScript = await isolate.compileScript(script);
+      const runPromise = userScript.run(context, {
         promise: true,
         copy: true,
+        ...(this.timeoutMs > 0 ? { timeout: this.timeoutMs } : {}),
       });
-      return { value, logs };
+      // If the wall-clock guard wins the race below, this promise is abandoned
+      // and will later reject against a disposed isolate; swallow that so it
+      // does not surface as an unhandled rejection.
+      runPromise.catch(() => {});
+
+      let value: unknown;
+      if (this.timeoutMs > 0) {
+        // Wall-clock guard for hangs that use no CPU (so the isolate's own
+        // timeout never fires), set slightly later so the CPU timeout wins for
+        // busy loops. If this fires, the isolate is abandoned (see finally).
+        const guard = new Promise<never>((_resolve, reject) => {
+          timer = setTimeout(() => {
+            wallClockTimedOut = true;
+            reject(
+              new Error(`Script execution timed out after ${this.timeoutMs}ms`),
+            );
+          }, this.timeoutMs + 50);
+        });
+        value = await Promise.race([runPromise, guard]);
+      } else {
+        value = await runPromise;
+      }
+
+      return { value, logs, warns, errors };
     } catch (e: unknown) {
-      return { value: undefined, logs, error: String(e) };
+      const error = toSandboxError(e);
+      errors.push(
+        error.name ? `${error.name}: ${error.message}` : error.message,
+      );
+      return { value: undefined, logs, warns, errors, error };
     } finally {
+      if (timer !== undefined) {
+        clearTimeout(timer);
+      }
       context.release();
+      // A wall-clock timeout means something is still pending inside the
+      // isolate (a never-settling promise, an unresponsive fetch). Dispose it
+      // so it cannot keep running; ensureIsolate rebuilds on the next run.
+      if (wallClockTimedOut && this.isolate && !this.isolate.isDisposed) {
+        this.isolate.dispose();
+        this.isolate = undefined;
+        this.bootstrapScript = undefined;
+      }
     }
   }
 
   dispose(): void {
-    if (!this.isolate.isDisposed) {
+    if (this.isolate && !this.isolate.isDisposed) {
       this.isolate.dispose();
     }
+    this.isolate = undefined;
+    this.bootstrapScript = undefined;
   }
+
+  [Symbol.dispose](): void {
+    this.dispose();
+  }
+}
+
+/** Build the content string for an error-level log from its call arguments. */
+function contentOf(args: unknown[]): string {
+  if (args.length === 0) {
+    return '';
+  }
+  const serialized = JSON.stringify(args[0]);
+  return serialized === undefined ? String(args[0]) : serialized;
+}
+
+function toSandboxError(e: unknown): SandboxError {
+  if (e instanceof Error) {
+    return { name: e.name, message: e.message, stack: e.stack };
+  }
+  return { name: 'Error', message: String(e) };
 }
