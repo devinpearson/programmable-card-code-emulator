@@ -1,9 +1,9 @@
-import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import ivm from 'isolated-vm';
 import nodeFetch from 'node-fetch';
-import type { Transaction } from './transaction.js';
 import type { Sandbox, SandboxError, SandboxRunResult } from './sandbox.js';
+import type { Transaction } from './transaction.js';
 
 const require = createRequire(import.meta.url);
 

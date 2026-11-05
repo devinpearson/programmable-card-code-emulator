@@ -1,7 +1,7 @@
-import type { Transaction } from './transaction.js';
 import { v4 as uuidv4 } from 'uuid';
 import { IsolatedVmSandbox } from './isolated-vm-sandbox.js';
 import type { Sandbox } from './sandbox.js';
+import type { Transaction } from './transaction.js';
 
 export interface ExecutionItem {
   executionId: string;
@@ -38,9 +38,9 @@ export const createExecutionItem = (
   warns: any[],
   errors: any[],
 ): ExecutionItem => {
-  let tempLogs = [];
+  const tempLogs = [];
   for (let i = 0; i < logs.length; i++) {
-    let log = {
+    const log = {
       createdAt: date,
       level: 'info',
       content: JSON.stringify(logs[i][0]),
@@ -50,7 +50,7 @@ export const createExecutionItem = (
   if (Array.isArray(warns)) {
     for (let i = 0; i < warns.length; i++) {
       if (warns[i].length > 0) {
-        let warn = {
+        const warn = {
           createdAt: date,
           level: 'warn',
           content: JSON.stringify(warns[i][0]),
@@ -61,7 +61,7 @@ export const createExecutionItem = (
   }
   if (Array.isArray(errors)) {
     for (let i = 0; i < errors.length; i++) {
-      let error = {
+      const error = {
         createdAt: date,
         level: 'error',
         content: errors[i],
@@ -86,12 +86,12 @@ export const createExecutionItem = (
   };
 };
 
-export const run = async function (
+export const run = async (
   transaction: Transaction,
   code: string,
   environmentvariables: string,
   sandbox?: Sandbox,
-): Promise<Array<ExecutionItem>> {
+): Promise<Array<ExecutionItem>> => {
   const beforeTransactionScript =
     '(async () => { \n' +
     code +
