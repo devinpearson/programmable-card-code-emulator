@@ -1,7 +1,7 @@
-import { type Merchant } from './merchant.js';
-import { merchantCategoryFromCode } from './merchant-category.js';
 import { countryFromString } from './country.js';
 import { currencyFromString } from './currency.js';
+import type { Merchant } from './merchant.js';
+import { merchantCategoryFromCode } from './merchant-category.js';
 
 export interface Transaction {
   accountNumber: string;
@@ -24,8 +24,8 @@ export const createTransaction = (
   merchantCity: string,
   countryCode: string,
 ): Transaction => {
-  let date = new Date();
-  let dateString = date.toISOString();
+  const date = new Date();
+  const dateString = date.toISOString();
   const country = countryFromString(countryCode.toUpperCase());
   const category = merchantCategoryFromCode(merchantCode);
   const cc = currencyFromString(currencyCode.toUpperCase());

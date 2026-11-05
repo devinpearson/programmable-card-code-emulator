@@ -1,7 +1,7 @@
-import { createTransaction, run } from '../src/index';
-import { createExecutionItem } from '../src/exec';
 import validator from 'validator';
-import { test, expect } from 'vitest';
+import { expect, test } from 'vitest';
+import { createExecutionItem } from '../src/exec';
+import { createTransaction, run } from '../src/index';
 
 test('create a transaction', () => {
   let dateTime = new Date();
@@ -32,8 +32,8 @@ test('create a transaction', () => {
 });
 
 test('create execution item', () => {
-  let dateTime = new Date();
-  let dateTimeIso = dateTime.toISOString();
+  const dateTime = new Date();
+  const dateTimeIso = dateTime.toISOString();
   const executionItem = createExecutionItem('before_transaction', dateTimeIso, [
     ['sample log'],
   ]);
@@ -83,7 +83,7 @@ test('valid merchant code', () => {
 });
 
 test('run vm', async () => {
-  let dateTime = new Date();
+  const dateTime = new Date();
 
   const transaction = createTransaction(
     'ZAR',
@@ -143,7 +143,7 @@ test('run vm', async () => {
 });
 
 test('run vm with comment at end', async () => {
-  let dateTime = new Date();
+  const dateTime = new Date();
   const transaction = createTransaction(
     'ZAR',
     1000,
@@ -203,7 +203,7 @@ test('run vm with comment at end', async () => {
 });
 
 test('run vm with no return in begin', async () => {
-  let dateTime = new Date();
+  const dateTime = new Date();
   const transaction = createTransaction(
     'ZAR',
     1000,
@@ -262,7 +262,7 @@ test('run vm with no return in begin', async () => {
 });
 
 test('run vm with false return on begin', async () => {
-  let dateTime = new Date();
+  const dateTime = new Date();
   const transaction = createTransaction(
     'ZAR',
     1000,
@@ -323,7 +323,7 @@ test('run vm with false return on begin', async () => {
 });
 
 test('run vm with no beforeTransaction', async () => {
-  let dateTime = new Date();
+  const dateTime = new Date();
   const transaction = createTransaction(
     'ZAR',
     1000,
@@ -370,7 +370,7 @@ test('run vm with no beforeTransaction', async () => {
 });
 
 test('run vm with no afterTransaction', async () => {
-  let dateTime = new Date();
+  const dateTime = new Date();
 
   const transaction = createTransaction(
     'ZAR',
@@ -420,7 +420,7 @@ test('run vm with no afterTransaction', async () => {
 });
 
 test('run vm with no afterDecline', async () => {
-  let dateTime = new Date();
+  const dateTime = new Date();
   const transaction = createTransaction(
     'ZAR',
     1000,
@@ -469,7 +469,7 @@ test('run vm with no afterDecline', async () => {
 });
 
 test('with error log', async () => {
-  let dateTime = new Date();
+  const dateTime = new Date();
   const transaction = createTransaction(
     'ZAR',
     1000,
@@ -697,7 +697,7 @@ test('a non-CPU hang times out and the sandbox recovers for reuse', async () => 
 });
 
 test('fetch reaches a local server', async () => {
-  const server = http.createServer((req, res) => {
+  const server = http.createServer((_req, res) => {
     res.setHeader('content-type', 'application/json');
     res.end(JSON.stringify({ pong: true }));
   });
