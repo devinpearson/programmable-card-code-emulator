@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import ivm from 'isolated-vm';
-import nodeFetch from 'node-fetch';
+import nodeFetch, { type RequestInit } from 'node-fetch';
+import { formatLogArgs } from './format.js';
 import type { Sandbox, SandboxError, SandboxRunResult } from './sandbox.js';
 import type { Transaction } from './transaction.js';
 
@@ -101,10 +102,20 @@ export interface IsolatedVmSandboxOptions {
    * stays usable. Code that hangs without using CPU (e.g. awaiting a promise
    * that never settles, or an unresponsive `fetch`) is caught by a wall-clock
    * guard shortly after; that case disposes the isolate, and the next `run`
-   * transparently rebuilds one.
+   * transparently rebuilds one. Any `fetch` still in flight when a run times
+   * out (or the isolate runs out of memory) is aborted.
    */
   timeoutMs?: number;
+  /**
+   * Largest `fetch` response body the host will read, in bytes. Default
+   * 10 MiB. Pass 0 to disable the cap. Response bodies are read on the host,
+   * outside the isolate's `memoryLimit`, so this is what bounds them. A larger
+   * response makes the card code's `fetch` reject.
+   */
+  maxResponseBytes?: number;
 }
+
+const DEFAULT_MAX_RESPONSE_BYTES = 10 * 1024 * 1024;
 
 /**
  * A {@link Sandbox} backed by [isolated-vm](https://github.com/laverdet/isolated-vm).
@@ -124,12 +135,17 @@ export interface IsolatedVmSandboxOptions {
 export class IsolatedVmSandbox implements Sandbox {
   private readonly memoryLimit: number;
   private readonly timeoutMs: number;
+  private readonly maxResponseBytes: number;
   private isolate: ivm.Isolate | undefined;
   private bootstrapScript: ivm.Script | undefined;
 
   constructor(options: IsolatedVmSandboxOptions = {}) {
     this.memoryLimit = options.memoryLimit ?? 128;
     this.timeoutMs = options.timeoutMs ?? 5000;
+    this.maxResponseBytes = Math.max(
+      0,
+      options.maxResponseBytes ?? DEFAULT_MAX_RESPONSE_BYTES,
+    );
     this.ensureIsolate();
   }
 
@@ -163,6 +179,11 @@ export class IsolatedVmSandbox implements Sandbox {
     const context = await isolate.createContext();
     let timer: ReturnType<typeof setTimeout> | undefined;
     let wallClockTimedOut = false;
+    // Aborts this run's in-flight fetches if the run is cut short. A run that
+    // finishes normally leaves them alone, so un-awaited callbacks still go
+    // out.
+    const fetchAbort = new AbortController();
+    let abortFetches = false;
     try {
       const jail = context.global;
 
@@ -180,7 +201,7 @@ export class IsolatedVmSandbox implements Sandbox {
           if (level === 'warn') {
             warns.push(args);
           } else if (level === 'error') {
-            errors.push(contentOf(args));
+            errors.push(formatLogArgs(args));
           } else {
             logs.push(args);
           }
@@ -189,10 +210,15 @@ export class IsolatedVmSandbox implements Sandbox {
       await jail.set(
         '_hostFetch',
         new ivm.Reference(async (url: string, optsJson?: string) => {
-          const res = await nodeFetch(
-            url,
-            optsJson === undefined ? undefined : JSON.parse(optsJson),
-          );
+          const userOpts: RequestInit =
+            optsJson === undefined ? {} : (JSON.parse(optsJson) ?? {});
+          const res = await nodeFetch(url, {
+            ...userOpts,
+            // Applied after the card code's options so it cannot override
+            // them. node-fetch rejects once the body exceeds `size`.
+            size: this.maxResponseBytes,
+            signal: fetchAbort.signal as RequestInit['signal'],
+          });
           const body = await res.text();
           const headers: Record<string, string> = {};
           res.headers.forEach((value, key) => {
@@ -251,6 +277,12 @@ export class IsolatedVmSandbox implements Sandbox {
       return { value, logs, warns, errors };
     } catch (e: unknown) {
       const error = toSandboxError(e);
+      // Cut short by a timeout (CPU or wall-clock) or by running out of
+      // memory: nothing will consume this run's pending fetches.
+      abortFetches =
+        wallClockTimedOut ||
+        isolate.isDisposed ||
+        error.message.startsWith('Script execution timed out');
       errors.push(
         error.name ? `${error.name}: ${error.message}` : error.message,
       );
@@ -258,6 +290,9 @@ export class IsolatedVmSandbox implements Sandbox {
     } finally {
       if (timer !== undefined) {
         clearTimeout(timer);
+      }
+      if (abortFetches) {
+        fetchAbort.abort();
       }
       context.release();
       // A wall-clock timeout means something is still pending inside the
@@ -282,15 +317,6 @@ export class IsolatedVmSandbox implements Sandbox {
   [Symbol.dispose](): void {
     this.dispose();
   }
-}
-
-/** Build the content string for an error-level log from its call arguments. */
-function contentOf(args: unknown[]): string {
-  if (args.length === 0) {
-    return '';
-  }
-  const serialized = JSON.stringify(args[0]);
-  return serialized === undefined ? String(args[0]) : serialized;
 }
 
 function toSandboxError(e: unknown): SandboxError {
