@@ -1,5 +1,11 @@
 # programmable-card-code-emulator
 
+## 3.0.1
+
+### Patch Changes
+
+- 1dec498: Document the release process in the README. This is the first version published by the release workflow since 3.0.0, so it carries an npm provenance attestation.
+
 ## 3.0.0
 
 ### Major Changes
