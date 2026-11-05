@@ -115,7 +115,8 @@ test('run vm', async () => {
     code,
     JSON.stringify({ test: 'value' }),
   );
-  expect(results[0].authorizationApproved).toBeNull();
+  expect(results[0].authorizationApproved).toBe(true);
+  expect(results[1].authorizationApproved).toBeNull();
   expect(
     new Date(results[0].completedAt).getTime() - dateTime.getTime(),
   ).toBeLessThan(2);
@@ -175,7 +176,8 @@ test('run vm with comment at end', async () => {
     code,
     JSON.stringify({ test: 'value' }),
   );
-  expect(results[0].authorizationApproved).toBeNull();
+  expect(results[0].authorizationApproved).toBe(true);
+  expect(results[1].authorizationApproved).toBeNull();
   expect(
     new Date(results[0].completedAt).getTime() - dateTime.getTime(),
   ).toBeLessThan(2);
@@ -234,7 +236,8 @@ test('run vm with no return in begin', async () => {
     code,
     JSON.stringify({ test: 'value' }),
   );
-  expect(results[0].authorizationApproved).toBeNull();
+  expect(results[0].authorizationApproved).toBe(true);
+  expect(results[1].authorizationApproved).toBeNull();
   expect(
     new Date(results[0].completedAt).getTime() - dateTime.getTime(),
   ).toBeLessThan(2);
@@ -295,7 +298,8 @@ test('run vm with false return on begin', async () => {
     code,
     JSON.stringify({ test: 'value' }),
   );
-  expect(results[0].authorizationApproved).toBeNull();
+  expect(results[0].authorizationApproved).toBe(false);
+  expect(results[1].authorizationApproved).toBeNull();
   expect(
     new Date(results[0].completedAt).getTime() - dateTime.getTime(),
   ).toBeLessThan(2);
@@ -346,7 +350,8 @@ test('run vm with no beforeTransaction', async () => {
     JSON.stringify({ test: 'value' }),
   );
   //   console.log(results);
-  expect(results[0].authorizationApproved).toBeNull();
+  expect(results[0].authorizationApproved).toBe(true);
+  expect(results[1].authorizationApproved).toBeNull();
   expect(
     new Date(results[0].completedAt).getTime() - dateTime.getTime(),
   ).toBeLessThan(2);
@@ -391,7 +396,8 @@ test('run vm with no afterTransaction', async () => {
     JSON.stringify({ test: 'value' }),
   );
   //   console.log(results);
-  expect(results[0].authorizationApproved).toBeNull();
+  expect(results[0].authorizationApproved).toBe(true);
+  expect(results[1].authorizationApproved).toBeNull();
   expect(
     new Date(results[0].completedAt).getTime() - dateTime.getTime(),
   ).toBeLessThan(2);
@@ -440,7 +446,8 @@ test('run vm with no afterDecline', async () => {
     JSON.stringify({ test: 'value' }),
   );
   //   console.log(results);
-  expect(results[0].authorizationApproved).toBeNull();
+  expect(results[0].authorizationApproved).toBe(false);
+  expect(results[1].authorizationApproved).toBeNull();
   expect(
     new Date(results[0].completedAt).getTime() - dateTime.getTime(),
   ).toBeLessThan(2);
@@ -489,7 +496,8 @@ test('with error log', async () => {
     JSON.stringify({ test: 'value' }),
   );
   //   console.log(results);
-  expect(results[0].authorizationApproved).toBeNull();
+  expect(results[0].authorizationApproved).toBe(false);
+  expect(results[1].authorizationApproved).toBeNull();
   expect(
     new Date(results[0].completedAt).getTime() - dateTime.getTime(),
   ).toBeLessThan(2);
@@ -739,4 +747,125 @@ test('disposing a non-standard thrown value still reports an error', async () =>
   const errorLog = results[0].logs.find((l) => l.level === 'error');
   expect(errorLog).toBeDefined();
   expect(errorLog.content).toContain('boom');
+});
+
+const startServer = async (handler) => {
+  const server = http.createServer(handler);
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address();
+  const close = () => {
+    server.closeAllConnections();
+    return new Promise((resolve) => server.close(resolve));
+  };
+  return { url: `http://127.0.0.1:${port}/`, close };
+};
+
+const waitFor = async (check, timeoutMs = 2000) => {
+  const deadline = Date.now() + timeoutMs;
+  while (!check()) {
+    if (Date.now() > deadline) {
+      return false;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  return true;
+};
+
+test('all console arguments are kept, space-separated', async () => {
+  const code = `const beforeTransaction = async (a) => {
+        console.log('a', 'b', 3);
+        console.warn('w', { x: 1 });
+        console.error('e', true);
+        return true;
+      };`;
+  const results = await run(txn(), code, JSON.stringify({}));
+  const byLevel = (level) =>
+    results[0].logs.find((l) => l.level === level).content;
+  expect(byLevel('info')).toBe('"a" "b" 3');
+  expect(byLevel('warn')).toBe('"w" {"x":1}');
+  expect(byLevel('error')).toBe('"e" true');
+});
+
+test('a single-argument log is unchanged by multi-argument support', () => {
+  const item = createExecutionItem('before_transaction', 'd', [[{ a: 1 }]]);
+  expect(item.logs[0].content).toBe(JSON.stringify({ a: 1 }));
+});
+
+test('fetch rejects a response larger than maxResponseBytes, even if card code asks for no limit', async () => {
+  const server = await startServer((_req, res) => res.end('x'.repeat(4096)));
+  const sandbox = new IsolatedVmSandbox({ maxResponseBytes: 1024 });
+  try {
+    const code = `const beforeTransaction = async (a) => {
+          try {
+            await (await fetch('${server.url}', { size: 0 })).text();
+            console.log('read');
+          } catch (e) {
+            console.log('rejected');
+          }
+          return true;
+        };`;
+    const results = await run(txn(), code, JSON.stringify({}), sandbox);
+    expect(results[0].logs[0].content).toBe(JSON.stringify('rejected'));
+  } finally {
+    sandbox.dispose();
+    await server.close();
+  }
+});
+
+test('a response under maxResponseBytes is read normally', async () => {
+  const server = await startServer((_req, res) => res.end('small'));
+  const sandbox = new IsolatedVmSandbox({ maxResponseBytes: 1024 });
+  try {
+    const code = `const beforeTransaction = async (a) => {
+          console.log(await (await fetch('${server.url}')).text());
+          return true;
+        };`;
+    const results = await run(txn(), code, JSON.stringify({}), sandbox);
+    expect(results[0].logs[0].content).toBe(JSON.stringify('small'));
+  } finally {
+    sandbox.dispose();
+    await server.close();
+  }
+});
+
+test('an in-flight fetch is aborted when the run times out', async () => {
+  let requestClosed = false;
+  // Never responds; records when the client gives up on the request.
+  const server = await startServer((req) => {
+    req.on('close', () => {
+      requestClosed = true;
+    });
+  });
+  const sandbox = new IsolatedVmSandbox({ timeoutMs: 200 });
+  try {
+    const code = `const beforeTransaction = async (a) => {
+          await fetch('${server.url}');
+          return true;
+        };`;
+    const results = await run(txn(), code, JSON.stringify({}), sandbox);
+    expect(
+      results[0].logs.find((l) => l.level === 'error').content.toLowerCase(),
+    ).toContain('timed out');
+    expect(await waitFor(() => requestClosed)).toBe(true);
+  } finally {
+    sandbox.dispose();
+    await server.close();
+  }
+});
+
+test('an un-awaited fetch still completes after a normal run', async () => {
+  let received = false;
+  const server = await startServer((_req, res) => {
+    received = true;
+    res.end('ok');
+  });
+  try {
+    const code = `const afterTransaction = async (t) => {
+          fetch('${server.url}');
+        };`;
+    await run(txn(), code, JSON.stringify({}));
+    expect(await waitFor(() => received)).toBe(true);
+  } finally {
+    await server.close();
+  }
 });

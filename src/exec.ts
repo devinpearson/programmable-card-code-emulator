@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { formatLogArgs } from './format.js';
 import { IsolatedVmSandbox } from './isolated-vm-sandbox.js';
 import type { Sandbox } from './sandbox.js';
 import type { Transaction } from './transaction.js';
@@ -37,13 +38,14 @@ export const createExecutionItem = (
   logs: any[],
   warns: any[],
   errors: any[],
+  authorizationApproved: boolean | null = null,
 ): ExecutionItem => {
   const tempLogs = [];
   for (let i = 0; i < logs.length; i++) {
     const log = {
       createdAt: date,
       level: 'info',
-      content: JSON.stringify(logs[i][0]),
+      content: formatLogArgs(logs[i]),
     };
     tempLogs.push(log);
   }
@@ -53,7 +55,7 @@ export const createExecutionItem = (
         const warn = {
           createdAt: date,
           level: 'warn',
-          content: JSON.stringify(warns[i][0]),
+          content: formatLogArgs(warns[i]),
         };
         tempLogs.push(warn);
       }
@@ -74,7 +76,7 @@ export const createExecutionItem = (
     rootCodeFunctionId: uuidv4(),
     sandbox: true,
     type: transactionType,
-    authorizationApproved: null,
+    authorizationApproved,
     logs: tempLogs,
     smsCount: 0,
     emailCount: 0,
@@ -129,11 +131,14 @@ export const run = async (
       env,
       transaction,
     );
-    const results = first.value;
+    // The before-transaction wrapper resolves to exactly true or false; an
+    // error (including a timeout) leaves it undefined, which is treated as a
+    // decline. The reported decision always matches the branch taken below.
+    const approved = first.value === true;
 
     let second = afterTransactionScript;
     let secondTransaction = TransactionType.AfterTransaction;
-    if (!results) {
+    if (!approved) {
       second = afterDeclineScript;
       secondTransaction = TransactionType.AfterDecline;
     }
@@ -148,6 +153,7 @@ export const run = async (
         first.logs,
         first.warns,
         first.errors,
+        approved,
       ),
     );
 

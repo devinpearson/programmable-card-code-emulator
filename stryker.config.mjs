@@ -13,7 +13,12 @@ export default {
   testRunner: 'vitest',
   coverageAnalysis: 'perTest',
   reporters: ['html', 'clear-text', 'progress'],
-  mutate: ['src/exec.ts', 'src/isolated-vm-sandbox.ts', 'src/transaction.ts'],
+  mutate: [
+    'src/exec.ts',
+    'src/format.ts',
+    'src/isolated-vm-sandbox.ts',
+    'src/transaction.ts',
+  ],
   // Mutation score gates. `break` is left off so a run never fails CI by
   // itself; this is a quality signal run on demand, not a required check.
   thresholds: {
