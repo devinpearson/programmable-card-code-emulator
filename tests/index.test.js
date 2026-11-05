@@ -635,3 +635,108 @@ test('a supplied sandbox is reused and not disposed by run', async () => {
   expect(second[0].logs[0].content).toBe(JSON.stringify('hello'));
   sandbox.dispose();
 });
+
+import http from 'node:http';
+import { IsolatedVmSandbox } from '../src/index';
+
+const txn = () =>
+  createTransaction('ZAR', 1000, '0000', 'Test Merchant', 'Test City', 'ZAF');
+
+test('console.warn and console.error are captured at their levels', async () => {
+  const code = `const beforeTransaction = async (a) => {
+        console.log('an info');
+        console.warn('a warning');
+        console.error('an error');
+        return true;
+      };`;
+  const results = await run(txn(), code, JSON.stringify({}));
+  const entries = results[0].logs;
+  expect(entries.find((l) => l.level === 'info').content).toBe(
+    JSON.stringify('an info'),
+  );
+  expect(entries.find((l) => l.level === 'warn').content).toBe(
+    JSON.stringify('a warning'),
+  );
+  expect(entries.find((l) => l.level === 'error').content).toBe(
+    JSON.stringify('an error'),
+  );
+});
+
+test('logging a BigInt does not crash the sandbox', async () => {
+  const code = `const beforeTransaction = async (a) => {
+        console.log(10n);
+        return true;
+      };`;
+  const results = await run(txn(), code, JSON.stringify({}));
+  expect(results[0].logs[0].content).toBe(JSON.stringify('10'));
+});
+
+test('a CPU-bound infinite loop is terminated by the timeout', async () => {
+  const sandbox = new IsolatedVmSandbox({ timeoutMs: 300 });
+  const code = `const beforeTransaction = async (a) => { while (true) {} };`;
+  const results = await run(txn(), code, JSON.stringify({}), sandbox);
+  const errorLog = results[0].logs.find((l) => l.level === 'error');
+  expect(errorLog).toBeDefined();
+  expect(errorLog.content.toLowerCase()).toContain('timed out');
+  sandbox.dispose();
+});
+
+test('a non-CPU hang times out and the sandbox recovers for reuse', async () => {
+  const sandbox = new IsolatedVmSandbox({ timeoutMs: 200 });
+  const hang = `const beforeTransaction = async (a) => { await new Promise(() => {}); };`;
+  const first = await run(txn(), hang, JSON.stringify({}), sandbox);
+  expect(
+    first[0].logs.find((l) => l.level === 'error').content.toLowerCase(),
+  ).toContain('timed out');
+
+  // The hang disposed the isolate; the next run must transparently rebuild.
+  const ok = `const beforeTransaction = async (a) => { console.log('alive'); return true; };`;
+  const second = await run(txn(), ok, JSON.stringify({}), sandbox);
+  expect(second[0].logs[0].content).toBe(JSON.stringify('alive'));
+  sandbox.dispose();
+});
+
+test('fetch reaches a local server', async () => {
+  const server = http.createServer((req, res) => {
+    res.setHeader('content-type', 'application/json');
+    res.end(JSON.stringify({ pong: true }));
+  });
+  await new Promise((resolve) => server.listen(0, resolve));
+  const { port } = server.address();
+  try {
+    const code = `const beforeTransaction = async (a) => {
+          const res = await fetch('http://127.0.0.1:${port}/');
+          const body = await res.json();
+          console.log(res.status);
+          console.log(body.pong);
+          return true;
+        };`;
+    const results = await run(txn(), code, JSON.stringify({}));
+    const contents = results[0].logs.map((l) => l.content);
+    expect(contents).toContain(JSON.stringify(200));
+    expect(contents).toContain(JSON.stringify(true));
+  } finally {
+    server.close();
+  }
+});
+
+test('invalid environment variables JSON throws a clear error', async () => {
+  await expect(run(txn(), 'const x = 1;', 'not json')).rejects.toThrow(
+    /Invalid environment variables JSON/,
+  );
+});
+
+test('exposes Symbol.dispose and tolerates repeated disposal', () => {
+  const sandbox = new IsolatedVmSandbox();
+  expect(typeof sandbox[Symbol.dispose]).toBe('function');
+  sandbox[Symbol.dispose]();
+  sandbox.dispose();
+});
+
+test('disposing a non-standard thrown value still reports an error', async () => {
+  const code = `const beforeTransaction = async (a) => { throw 'boom'; };`;
+  const results = await run(txn(), code, JSON.stringify({}));
+  const errorLog = results[0].logs.find((l) => l.level === 'error');
+  expect(errorLog).toBeDefined();
+  expect(errorLog.content).toContain('boom');
+});
