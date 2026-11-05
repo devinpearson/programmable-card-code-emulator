@@ -40,23 +40,19 @@
   },
   "dependencies": {
     "isolated-vm": "^6.2.0",
-    "moment-mini": "^2.29.4",
-    "node-fetch": "^3.3.2",
-    "uuid": "^11.0.3"
+    "moment-mini": "^2.29.4"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.17.0",
+    "@arethetypeswrong/cli": "^0.18.5",
     "@biomejs/biome": "^2.6.5",
     "@changesets/cli": "^2.27.10",
     "@stryker-mutator/core": "^10.1.1",
     "@stryker-mutator/vitest-runner": "^10.1.1",
-    "@types/node": "^20.10.7",
-    "@types/node-fetch": "^2.6.12",
-    "@types/uuid": "^10.0.0",
+    "@types/node": "^22.20.5",
     "tsup": "^8.3.5",
-    "typescript": "^5.3.3",
+    "typescript": "^5.9.3",
     "validator": "^13.11.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.12"
   },
   "overrides": {
     "esbuild": "0.28.1"
