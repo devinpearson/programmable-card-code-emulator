@@ -12,7 +12,8 @@
     "check-format": "prettier --check .",
     "format": "prettier --write .",
     "test": "vitest",
-    "local-release": "changeset version && changeset publish"
+    "local-release": "changeset version && changeset publish",
+    "test:mutation": "stryker run"
   },
   "files": [
     "dist"
@@ -42,6 +43,8 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.0",
     "@changesets/cli": "^2.27.10",
+    "@stryker-mutator/core": "^10.1.1",
+    "@stryker-mutator/vitest-runner": "^10.1.1",
     "@types/node": "^20.10.7",
     "@types/node-fetch": "^2.6.12",
     "@types/uuid": "^10.0.0",
