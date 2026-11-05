@@ -152,17 +152,23 @@ npx changeset version
 git push -u origin release-X.Y.Z
 ```
 
-`changeset version` bumps `package.json`, writes the `CHANGELOG.md` entry, deletes the consumed changesets, and commits all of that itself (`"commit": true` in `.changeset/config.json`). Open a PR to `main`, check the version and changelog, and merge it.
+`changeset version` bumps `package.json`, writes the `CHANGELOG.md` entry, deletes the consumed changesets, and commits all of that itself. That's the `commit` setting in `.changeset/config.json`, which is set not to add `[skip ci]` (see below). Open a PR to `main`, let CI run, check the version and changelog, and merge it.
 
-### 3. Tag the release commit on main
+### 3. Create a GitHub Release on the release commit
+
+Creating the Release creates the `vX.Y.Z` tag, and the new tag starts the **Publish to npm** workflow: `npm ci`, `npm test`, then `npm publish` (whose `prepublishOnly` runs `npm run ci`).
+
+In the GitHub UI: Releases → Draft a new release → create tag `vX.Y.Z` on `main` → paste the version's `CHANGELOG.md` entry as the notes → Publish release.
+
+Or from the terminal, right after the release PR merges:
 
 ```bash
 git checkout main && git pull
-git tag -a vX.Y.Z -m vX.Y.Z
-git push origin vX.Y.Z
+gh release create vX.Y.Z --target "$(git rev-parse HEAD)" --title vX.Y.Z \
+  --notes "$(awk '/^## X.Y.Z/{f=1;next} /^## /{if(f)exit} f' CHANGELOG.md)"
 ```
 
-Pushing a `v*` tag starts the publish workflow: `npm ci`, `npm test`, then `npm publish` (whose `prepublishOnly` runs `npm run ci`). If no run appears (this happened for v3.0.0), start it by hand on the tag:
+If no publish run appears within a minute or two, start it by hand on the tag:
 
 ```bash
 gh workflow run publish.yml --ref vX.Y.Z
@@ -190,6 +196,7 @@ A new version can take a few minutes to appear on npm after it's accepted.
 
 ### Things that have gone wrong before
 
+- **`[skip ci]` in the version commit.** By default, changesets ends its version commit message with `[skip ci]`. A squash merge carries that line into `main`, and GitHub then skips push and pull-request workflows for that commit, including the tag a Release creates. So the 3.0.0 and 3.0.1 release PRs got no CI, and their tags didn't start the publish workflow; 3.0.1 was published by starting the workflow by hand. `.changeset/config.json` now sets `"skipCI": false`. If a release commit still contains `[skip ci]`, publish with `gh workflow run publish.yml --ref vX.Y.Z`, which `[skip ci]` doesn't block.
 - **Stacked PRs and squash merges.** Don't base a release branch, or any PR, on another PR's unmerged branch. Once the first PR is squash-merged, GitHub merges the second against an older base and can silently drop file deletions. For 3.0.0 this brought the consumed changeset back onto `main`, which had to be removed separately (#15). Rebase onto `main` after the first PR merges.
 - **A version can only be published once.** If the workflow runs for a version that's already on npm, it fails at `npm publish` and changes nothing.
 - **Trusted publishing is tied to the workflow file.** It's configured on npmjs.com for this repository and `publish.yml`. Renaming or moving that file breaks publishing until the npm settings are updated.
