@@ -127,7 +127,72 @@ npm run ci             # build, typecheck, lint, check-exports
 npm run test:mutation  # Stryker; report at reports/mutation/mutation.html
 ```
 
-Releases use [changesets](https://github.com/changesets/changesets): add one with `npx changeset`.
+## Releasing
+
+Versions and the changelog are managed with [changesets](https://github.com/changesets/changesets). npm publishing is done by the **Publish to npm** workflow (`.github/workflows/publish.yml`), which uses npm trusted publishing, so each version it publishes carries a provenance attestation.
+
+### 1. Add a changeset with each user-facing change
+
+In the PR that makes the change:
+
+```bash
+npx changeset
+```
+
+Pick the bump and write a one-paragraph summary, then commit the new file in `.changeset/`. Use **major** for anything that can break existing users, such as raising the minimum Node version, adding a native dependency, or changing what `run` returns.
+
+### 2. Version on a release branch
+
+Start from an up-to-date `main`:
+
+```bash
+git checkout main && git pull
+git checkout -b release-X.Y.Z
+npx changeset version
+git push -u origin release-X.Y.Z
+```
+
+`changeset version` bumps `package.json`, writes the `CHANGELOG.md` entry, deletes the consumed changesets, and commits all of that itself (`"commit": true` in `.changeset/config.json`). Open a PR to `main`, check the version and changelog, and merge it.
+
+### 3. Tag the release commit on main
+
+```bash
+git checkout main && git pull
+git tag -a vX.Y.Z -m vX.Y.Z
+git push origin vX.Y.Z
+```
+
+Pushing a `v*` tag starts the publish workflow: `npm ci`, `npm test`, then `npm publish` (whose `prepublishOnly` runs `npm run ci`). If no run appears (this happened for v3.0.0), start it by hand on the tag:
+
+```bash
+gh workflow run publish.yml --ref vX.Y.Z
+```
+
+Or use Actions → Publish to npm → Run workflow, and pick the tag.
+
+### 4. Check it went out
+
+```bash
+gh run list --workflow publish.yml --limit 1
+npm view programmable-card-code-emulator version
+npm view programmable-card-code-emulator@X.Y.Z dist.attestations.provenance
+```
+
+A new version can take a few minutes to appear on npm after it's accepted.
+
+### Publishing from your machine
+
+`npm run local-release` runs `changeset version` and then `changeset publish`, which publishes with a browser login. Prefer the workflow, because a local publish:
+
+- has no provenance attestation;
+- versions and tags whatever branch you're on, so for 3.0.0 the version commit landed on a release branch and needed a follow-up PR to reach `main`;
+- leaves the tag on your machine only.
+
+### Things that have gone wrong before
+
+- **Stacked PRs and squash merges.** Don't base a release branch, or any PR, on another PR's unmerged branch. Once the first PR is squash-merged, GitHub merges the second against an older base and can silently drop file deletions. For 3.0.0 this brought the consumed changeset back onto `main`, which had to be removed separately (#15). Rebase onto `main` after the first PR merges.
+- **A version can only be published once.** If the workflow runs for a version that's already on npm, it fails at `npm publish` and changes nothing.
+- **Trusted publishing is tied to the workflow file.** It's configured on npmjs.com for this repository and `publish.yml`. Renaming or moving that file breaks publishing until the npm settings are updated.
 
 ## License
 
