@@ -3,6 +3,9 @@
   "version": "2.0.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "prepublishOnly": "npm run ci",
     "build": "tsup",
