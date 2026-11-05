@@ -1,8 +1,7 @@
 import type { Transaction } from './transaction.js';
 import { v4 as uuidv4 } from 'uuid';
-import vm from 'vm';
-import nodeFetch from 'node-fetch';
-import momentMini from 'moment-mini';
+import { IsolatedVmSandbox } from './isolated-vm-sandbox.js';
+import type { Sandbox } from './sandbox.js';
 
 export interface ExecutionItem {
   executionId: string;
@@ -91,6 +90,7 @@ export const run = async function (
   transaction: Transaction,
   code: string,
   environmentvariables: string,
+  sandbox?: Sandbox,
 ): Promise<Array<ExecutionItem>> {
   const beforeTransactionScript =
     '(async () => { \n' +
@@ -110,82 +110,70 @@ export const run = async function (
     '\n let after = await afterDecline(authInput);' +
     '\n return after}' +
     ' return false})()';
-  const sb = {
-    process: { env: JSON.parse(environmentvariables) },
-    authInput: transaction,
-    console: {
-      log: (...args: any[]) => {
-        sb.logs.push(args);
-        // console.log(...args);
-      },
-    },
-    logs: Array<any>(),
-    warns: Array<any>(),
-    errors: Array<any>(),
-    fetch: nodeFetch,
-    moment: momentMini,
-  };
-  let results;
-  try {
-    let script = new vm.Script(beforeTransactionScript);
-    results = await script.runInNewContext(sb, {
-      displayErrors: false,
-    });
-  } catch (e: any) {
-    sb.errors.push(e.toString());
-  }
-  const sb2 = {
-    process: { env: JSON.parse(environmentvariables) },
-    authInput: transaction,
-    console: {
-      log: (...args: any[]) => {
-        sb2.logs.push(args);
-        //console.log(...args);
-      },
-    },
-    logs: Array<any>(),
-    warns: Array<any>(),
-    errors: Array<any>(),
-    fetch: nodeFetch,
-    moment: momentMini,
-  };
-  let second = afterTransactionScript;
-  let secondTransaction = TransactionType.AfterTransaction;
-  if (!results) {
-    second = afterDeclineScript;
-    secondTransaction = TransactionType.AfterDecline;
-  }
+
+  const env = JSON.parse(environmentvariables);
+
+  // Use the supplied sandbox, or create (and own) one for this run. The
+  // emulator depends only on the Sandbox interface, so the execution engine
+  // can be swapped without touching this function or its callers.
+  const ownSandbox = sandbox ?? new IsolatedVmSandbox();
+
+  // Captured console output and errors for each of the two phases.
+  const sb = { logs: Array<any>(), warns: Array<any>(), errors: Array<any>() };
+  const sb2 = { logs: Array<any>(), warns: Array<any>(), errors: Array<any>() };
 
   try {
-    let script2 = new vm.Script(second);
-    results = await script2.runInNewContext(sb2, {
-      displayErrors: false,
-    });
-  } catch (e: any) {
-    sb2.errors.push(e.toString());
+    const first = await ownSandbox.run(
+      beforeTransactionScript,
+      env,
+      transaction,
+    );
+    sb.logs = first.logs;
+    if (first.error) {
+      sb.errors.push(first.error);
+    }
+    let results = first.value;
+
+    let second = afterTransactionScript;
+    let secondTransaction = TransactionType.AfterTransaction;
+    if (!results) {
+      second = afterDeclineScript;
+      secondTransaction = TransactionType.AfterDecline;
+    }
+
+    const secondResult = await ownSandbox.run(second, env, transaction);
+    sb2.logs = secondResult.logs;
+    if (secondResult.error) {
+      sb2.errors.push(secondResult.error);
+    }
+
+    const executionItems = [];
+    executionItems.push(
+      createExecutionItem(
+        TransactionType.BeforeTransaction,
+        transaction.dateTime,
+        sb.logs,
+        sb.warns,
+        sb.errors,
+      ),
+    );
+
+    executionItems.push(
+      createExecutionItem(
+        secondTransaction,
+        transaction.dateTime,
+        sb2.logs,
+        sb2.warns,
+        sb2.errors,
+      ),
+    );
+
+    return executionItems;
+  } finally {
+    // Only dispose a sandbox we created; a caller-supplied one is theirs to
+    // manage (and reuse across runs).
+    if (sandbox === undefined) {
+      ownSandbox.dispose();
+    }
   }
-
-  let executionItems = [];
-  executionItems.push(
-    createExecutionItem(
-      TransactionType.BeforeTransaction,
-      transaction.dateTime,
-      sb.logs,
-      sb.warns,
-      sb.errors,
-    ),
-  );
-
-  executionItems.push(
-    createExecutionItem(
-      secondTransaction,
-      transaction.dateTime,
-      sb2.logs,
-      sb2.warns,
-      sb2.errors,
-    ),
-  );
-
-  //  console.log(sb.logs)
-  return executionItems;
 };
