@@ -11,9 +11,10 @@
       "!dist",
       "!reports",
       "!.stryker-tmp",
-      "!.github",
       "!README.md",
-      "!package-lock.json"
+      "!package-lock.json",
+      "!**/*.yml",
+      "!**/*.yaml"
     ]
   },
   "formatter": {
