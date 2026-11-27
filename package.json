@@ -52,7 +52,7 @@
     "tsup": "^8.3.5",
     "typescript": "^5.9.3",
     "validator": "^13.11.0",
-    "vitest": "^4.1.12"
+    "vitest": "^5.1.1"
   },
   "overrides": {
     "esbuild": "0.28.1",
