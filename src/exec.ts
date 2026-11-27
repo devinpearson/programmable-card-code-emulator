@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { formatLogArgs } from './format.js';
 import { IsolatedVmSandbox } from './isolated-vm-sandbox.js';
 import type { Sandbox } from './sandbox.js';
@@ -72,8 +72,8 @@ export const createExecutionItem = (
     }
   }
   return {
-    executionId: uuidv4(),
-    rootCodeFunctionId: uuidv4(),
+    executionId: randomUUID(),
+    rootCodeFunctionId: randomUUID(),
     sandbox: true,
     type: transactionType,
     authorizationApproved,

@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import ivm from 'isolated-vm';
-import nodeFetch, { type RequestInit } from 'node-fetch';
 import { formatLogArgs } from './format.js';
 import type { Sandbox, SandboxError, SandboxRunResult } from './sandbox.js';
 import type { Transaction } from './transaction.js';
@@ -212,14 +211,12 @@ export class IsolatedVmSandbox implements Sandbox {
         new ivm.Reference(async (url: string, optsJson?: string) => {
           const userOpts: RequestInit =
             optsJson === undefined ? {} : (JSON.parse(optsJson) ?? {});
-          const res = await nodeFetch(url, {
+          const res = await fetch(url, {
             ...userOpts,
-            // Applied after the card code's options so it cannot override
-            // them. node-fetch rejects once the body exceeds `size`.
-            size: this.maxResponseBytes,
-            signal: fetchAbort.signal as RequestInit['signal'],
+            // Applied after the card code's options so it cannot override it.
+            signal: fetchAbort.signal,
           });
-          const body = await res.text();
+          const body = await readBodyWithLimit(res, this.maxResponseBytes);
           const headers: Record<string, string> = {};
           res.headers.forEach((value, key) => {
             headers[key] = value;
@@ -317,6 +314,46 @@ export class IsolatedVmSandbox implements Sandbox {
   [Symbol.dispose](): void {
     this.dispose();
   }
+}
+
+/**
+ * Read a response body as UTF-8 text, rejecting once it is larger than `limit`
+ * bytes (`limit` of 0 means no cap). A declared `Content-Length` over the limit
+ * is rejected before reading; otherwise bytes are counted as they arrive, so a
+ * missing or wrong `Content-Length` cannot get past the cap.
+ */
+async function readBodyWithLimit(
+  res: Response,
+  limit: number,
+): Promise<string> {
+  if (res.body === null) {
+    return '';
+  }
+  if (limit <= 0) {
+    return res.text();
+  }
+  const tooLarge = () =>
+    new Error(`Response body is larger than maxResponseBytes (${limit} bytes)`);
+  if (Number(res.headers.get('content-length')) > limit) {
+    await res.body.cancel();
+    throw tooLarge();
+  }
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    total += value.byteLength;
+    if (total > limit) {
+      await reader.cancel();
+      throw tooLarge();
+    }
+    chunks.push(value);
+  }
+  return new TextDecoder().decode(Buffer.concat(chunks));
 }
 
 function toSandboxError(e: unknown): SandboxError {
