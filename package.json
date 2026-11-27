@@ -45,7 +45,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@biomejs/biome": "^2.6.5",
-    "@changesets/cli": "^2.27.10",
+    "@changesets/cli": "^3.0.3",
     "@stryker-mutator/core": "^10.1.1",
     "@stryker-mutator/vitest-runner": "^10.1.1",
     "@types/node": "^22.20.5",
