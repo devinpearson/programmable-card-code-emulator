@@ -39,7 +39,7 @@
     "url": "git+https://github.com/devinpearson/programmable-card-code-emulator.git"
   },
   "dependencies": {
-    "isolated-vm": "^6.2.0",
+    "isolated-vm": "^7.0.2",
     "moment-mini": "^2.29.4"
   },
   "devDependencies": {
